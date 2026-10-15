@@ -12,7 +12,7 @@
   --hint:var(--tg-theme-hint-color,#8a94a6);
   --card:var(--tg-theme-secondary-bg-color,#f2f5fa);
   --brand1:#2b6cff;--brand2:#19c3b0;--brand3:#7c4dff;
-  --ok:#22a867;--bad:#e5484d;--warn:#f0a020;--plan:#7c4dff;
+  --ok:#22a867;--bad:#e5484d;--warn:#f0a020;--plan:#7c4dff;--trial:#0ea5e9;
   --radius:18px;
   --shadow:0 6px 22px rgba(30,60,120,.12);
 }
@@ -88,7 +88,7 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .avatar{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;flex:none}
 .tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;color:#fff;font-weight:600}
 .t-done{background:var(--ok)}.t-cancel{background:var(--hint)}.t-planned{background:var(--plan)}
-.t-unpaid{background:var(--warn)}.t-paid{background:var(--brand1)}
+.t-unpaid{background:var(--warn)}.t-paid{background:var(--brand1)}.t-trial{background:var(--trial)}.t-custom{background:var(--brand3)}
 .meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--hint);font-size:12.5px;margin-top:3px}
 .actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 .btn{border:0;border-radius:12px;padding:11px 16px;font-size:15px;font-weight:600;color:#fff;width:100%;
@@ -129,6 +129,25 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .legend div{display:flex;align-items:center;gap:8px;font-size:13px;margin:5px 0}
 .legend i{width:11px;height:11px;border-radius:4px;display:inline-block}
 
+.achs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.ach{border-radius:var(--radius);padding:12px;background:var(--card);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:3px;min-height:128px}
+.ach .ic{font-size:30px;line-height:1.1}
+.ach b{font-size:14px}
+.ach .d{font-size:11.5px;color:var(--hint);line-height:1.3}
+.ach.got{background:linear-gradient(135deg,rgba(43,108,255,.2),rgba(25,195,176,.22));outline:1.5px solid rgba(25,195,176,.55)}
+.ach.got .when{font-size:11px;color:var(--ok);font-weight:600;margin-top:auto}
+.ach.locked .ic{filter:grayscale(1);opacity:.5}
+.ach.locked b{opacity:.75}
+.ach .pg{margin-top:auto}
+.ach .pg .mini{margin-top:6px}
+.ach .pg small{font-size:11px;color:var(--hint)}
+
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translate(-50%,-140%);z-index:60;max-width:90%;
+  padding:12px 18px;border-radius:16px;color:#fff;font-weight:600;font-size:14px;text-align:center;
+  background:linear-gradient(135deg,var(--brand1),var(--brand3),var(--brand2));box-shadow:0 10px 30px rgba(43,108,255,.5);
+  transition:transform .5s cubic-bezier(.2,1.2,.3,1)}
+.toast.show{transform:translate(-50%,0)}
+
 .overlay{position:fixed;inset:0;background:rgba(10,15,30,.5);opacity:0;pointer-events:none;transition:.25s;z-index:40}
 .overlay.show{opacity:1;pointer-events:auto}
 .sheet{position:fixed;left:0;right:0;bottom:0;max-height:92vh;overflow-y:auto;background:var(--bg);border-radius:26px 26px 0 0;padding:10px 18px calc(24px + env(safe-area-inset-bottom));
@@ -140,12 +159,17 @@ label{display:block;font-size:12px;color:var(--hint);margin:10px 2px 2px}
 input,select,textarea{width:100%;padding:12px;border-radius:12px;border:1.5px solid rgba(127,127,127,.25);background:var(--card);color:var(--text);font-size:16px;outline:none;font-family:inherit}
 textarea{min-height:90px;resize:vertical;font-size:13px}
 input:focus,select:focus,textarea:focus{border-color:var(--brand1)}
+input:disabled{opacity:.45}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chk{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px;border-radius:12px;background:var(--card);font-size:15px}
+.chk input{width:22px;height:22px;flex:none;accent-color:var(--trial)}
+.calc{font-size:12.5px;color:var(--hint);margin:4px 2px 0}
 </style>
 </head>
 <body>
 
 <button class="gear" id="gear">⚙</button>
+<div class="toast" id="toast"></div>
 
 <div class="hero">
   <div class="hero-top">
@@ -182,6 +206,7 @@ if (tg) {
 }
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 const haptic = (t = 'light') => { try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t); } catch (e) {} };
+const hapticOk = () => { try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); } catch (e) {} };
 
 /* ===== Слой хранения (для варианта Б заменить этот блок) ===== */
 const Storage = (() => {
@@ -224,8 +249,8 @@ const Storage = (() => {
 })();
 
 /* ===== Состояние и утилиты ===== */
-let db = {students: [], lessons: [], goal: 0};
-let tab = 'lessons', lessonFilter = 'all', period = 'all', lessonLimit = 50, selDay = null, weekOff = 0;
+let db = {students: [], lessons: [], goal: 0, ach: {}};
+let tab = 'lessons', lessonFilter = 'all', period = 'all', lessonLimit = 50, selDay = null, weekOff = 0, ready = false;
 const $ = id => document.getElementById(id);
 const view = $('view');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -233,7 +258,8 @@ const money = n => (Math.round(n * 100) / 100).toLocaleString('ru-RU');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const stu = id => db.students.find(s => s.id === id);
 const hours = l => (l.duration || 60) / 60;
-const sum = l => l.rate * hours(l);
+const hasCustom = l => !l.trial && typeof l.price === 'number';
+const sum = l => l.trial ? 0 : (hasCustom(l) ? l.price : l.rate * hours(l));
 const fmtDate = d => d.split('-').reverse().join('.');
 const p2 = n => String(n).padStart(2, '0');
 const ymd = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
@@ -272,6 +298,72 @@ function persist() {
 document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
 window.addEventListener('pagehide', flush);
 
+/* ===== Достижения ===== */
+const weekKey = dateStr => {
+  const d = new Date(dateStr + 'T00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d);
+};
+function achStats() {
+  const done = db.lessons.filter(l => l.status === 'done');
+  const pay = done.filter(l => !l.trial);
+  const paid = pay.filter(l => l.paid);
+  const curM = todayStr().slice(0, 7);
+  const byM = {};
+  pay.forEach(l => { const m = l.date.slice(0, 7); const o = byM[m] = byM[m] || {n: 0, unpaid: 0, inc: 0}; o.n++; if (l.paid) o.inc += sum(l); else o.unpaid++; });
+  const cleanMonths = Object.keys(byM).filter(m => m < curM && byM[m].n >= 4 && byM[m].unpaid === 0).length;
+  const goalHit = db.goal > 0 && Object.values(byM).some(o => o.inc >= db.goal);
+  const seq = db.lessons.filter(l => l.status === 'done' || l.status === 'cancel').sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  let run = 0, streak = 0; seq.forEach(l => { run = l.status === 'done' ? run + 1 : 0; streak = Math.max(streak, run); });
+  const wk = {}; done.forEach(l => { const k = weekKey(l.date); wk[k] = (wk[k] || 0) + 1; });
+  return {
+    doneN: done.length, hours: done.reduce((a, l) => a + hours(l), 0), paidN: paid.length,
+    income: paid.reduce((a, l) => a + sum(l), 0), students: db.students.length,
+    cleanMonths, goalHit, streak, maxWeek: Math.max(0, ...Object.values(wk))
+  };
+}
+const ACH = [
+  {id: 'first', icon: '🌱', title: 'Первое занятие', desc: 'Проведите первое занятие', target: 1, cur: s => s.doneN},
+  {id: 'pay1', icon: '💳', title: 'Первая оплата', desc: 'Получите первую оплату', target: 1, cur: s => s.paidN},
+  {id: 'h10', icon: '⏱', title: '10 часов', desc: '10 проведённых часов', target: 10, cur: s => s.hours, unit: 'ч'},
+  {id: 'h50', icon: '🔥', title: '50 часов', desc: '50 проведённых часов', target: 50, cur: s => s.hours, unit: 'ч'},
+  {id: 'h100', icon: '💯', title: '100 часов', desc: '100 проведённых часов', target: 100, cur: s => s.hours, unit: 'ч'},
+  {id: 'h250', icon: '🏆', title: '250 часов', desc: '250 проведённых часов', target: 250, cur: s => s.hours, unit: 'ч'},
+  {id: 'l25', icon: '📚', title: '25 занятий', desc: 'Проведите 25 занятий', target: 25, cur: s => s.doneN},
+  {id: 'l100', icon: '🎓', title: '100 занятий', desc: 'Проведите 100 занятий', target: 100, cur: s => s.doneN},
+  {id: 'st5', icon: '👥', title: '5 учеников', desc: 'Добавьте 5 учеников', target: 5, cur: s => s.students},
+  {id: 'st10', icon: '🌟', title: '10 учеников', desc: 'Добавьте 10 учеников', target: 10, cur: s => s.students},
+  {id: 'inc1k', icon: '💰', title: 'Заработано 1000', desc: 'Получите оплат на 1000', target: 1000, cur: s => s.income},
+  {id: 'debt', icon: '🧾', title: 'Месяц без долгов', desc: 'Завершённый месяц, где все занятия оплачены (от 4 занятий)', target: 1, cur: s => s.cleanMonths ? 1 : 0},
+  {id: 'streak', icon: '✅', title: '10 без отмен', desc: '10 проведённых занятий подряд без отмен', target: 10, cur: s => s.streak},
+  {id: 'week', icon: '🚀', title: 'Горячая неделя', desc: '8 занятий за одну неделю', target: 8, cur: s => s.maxWeek},
+  {id: 'goal', icon: '🎯', title: 'Цель месяца', desc: 'Достигните цели по доходу за месяц (задаётся в ⚙)', target: 1, cur: s => s.goalHit ? 1 : 0}
+];
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3800);
+}
+function checkAch() {
+  if (!ready) return;
+  db.ach = db.ach || {};
+  const s = achStats(), fresh = [];
+  ACH.forEach(a => { if (!db.ach[a.id] && a.cur(s) >= a.target) { db.ach[a.id] = todayStr(); fresh.push(a); } });
+  if (fresh.length) {
+    persist(); hapticOk();
+    toast(fresh.length === 1 ? `🏆 Достижение: ${fresh[0].title}` : `🏆 Новые достижения: ${fresh.length}`);
+  }
+}
+function achSection() {
+  const s = achStats(), got = ACH.filter(a => db.ach && db.ach[a.id]).length;
+  return `<h2>Достижения <span class="cnt">${got} / ${ACH.length}</span></h2>
+    <div class="achs">${ACH.map(a => {
+      const earned = db.ach && db.ach[a.id];
+      if (earned) return `<div class="ach got"><div class="ic">${a.icon}</div><b>${a.title}</b><div class="d">${a.desc}</div><div class="when">✔ получено ${fmtDate(earned)}</div></div>`;
+      const cur = Math.min(a.cur(s), a.target), pct = Math.round(cur / a.target * 100);
+      return `<div class="ach locked"><div class="ic">${a.icon}</div><b>${a.title}</b><div class="d">${a.desc}</div>
+        <div class="pg"><div class="mini"><i style="width:${pct}%"></i></div><small>${money(cur)} / ${money(a.target)}${a.unit ? ' ' + a.unit : ''}</small></div></div>`;
+    }).join('')}</div>`;
+}
+
 /* ===== Шапка ===== */
 function renderHero() {
   const u = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
@@ -290,6 +382,7 @@ function renderHero() {
 
 /* ===== Рендер ===== */
 function render() {
+  checkAch();
   document.body.classList.toggle('on-stats', tab === 'stats');
   document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   $('fab').classList.toggle('hidden', !(tab === 'lessons' || tab === 'students'));
@@ -327,7 +420,7 @@ function renderLessons() {
     all: l => true,
     upcoming: l => l.status === 'planned' || (l.date >= now && l.status !== 'cancel'),
     done: l => l.status === 'done',
-    unpaid: l => l.status === 'done' && !l.paid,
+    unpaid: l => l.status === 'done' && !l.paid && !l.trial,
     cancel: l => l.status === 'cancel'
   };
   const chips = [['all', 'Все'], ['upcoming', 'Предстоящие'], ['done', 'Проведены'], ['unpaid', 'Неоплаченные'], ['cancel', 'Отменены']];
@@ -349,16 +442,18 @@ function renderLessons() {
       !list.length ? `<div class="card empty"><span class="ico">📭</span>Здесь пока пусто. Нажмите «+», чтобы добавить занятие</div>` :
       Object.keys(groups).map(d => `<div class="day">${dayLabel(d)}</div>` + groups[d].map(l => {
         const s = stu(l.studentId) || {name: '—', id: 'x'}; const [c1] = colorOf(s.id);
+        const priceTxt = l.trial ? 'Бесплатно' : money(sum(l));
         return `<div class="card lesson" style="--c1:${c1}">
           <div class="time"><b>${esc(l.time)}</b><span class="hint">${l.duration} мин</span></div>
           <div class="grow">
             <div class="row"><b class="ellipsis">${esc(s.name)}</b><span class="tag t-${l.status}">${statusName[l.status]}</span></div>
             <div class="meta">${s.subject ? `<span>📚 ${esc(s.subject)}</span>` : ''}<span>⏱ ${l.duration} мин</span>${l.topic ? `<span>📖 ${esc(l.topic)}</span>` : ''}</div>
-            <div class="row" style="margin-top:6px"><b>${money(sum(l))}</b>
-              ${l.status === 'done' ? `<span class="tag ${l.paid ? 't-paid' : 't-unpaid'}">${l.paid ? 'оплачено' : 'не оплачено'}</span>` : ''}</div>
+            <div class="row" style="margin-top:6px"><span><b>${priceTxt}</b>
+              ${l.trial ? ' <span class="tag t-trial">🎁 пробное</span>' : ''}${hasCustom(l) ? ' <span class="tag t-custom">✎ своя цена</span>' : ''}</span>
+              ${l.status === 'done' && !l.trial ? `<span class="tag ${l.paid ? 't-paid' : 't-unpaid'}">${l.paid ? 'оплачено' : 'не оплачено'}</span>` : ''}</div>
             <div class="actions">
               ${l.status === 'planned' ? `<button class="btn small ok" data-done="${l.id}">✔ Проведено</button>` : ''}
-              ${l.status === 'done' ? `<button class="btn small ${l.paid ? 'ghost' : ''}" data-pay="${l.id}">${l.paid ? 'Снять оплату' : '💳 Оплачено'}</button>` : ''}
+              ${l.status === 'done' && !l.trial ? `<button class="btn small ${l.paid ? 'ghost' : ''}" data-pay="${l.id}">${l.paid ? 'Снять оплату' : '💳 Оплачено'}</button>` : ''}
               <button class="btn small ghost" data-edit="${l.id}">Изменить</button>
               <button class="btn small danger" data-del="${l.id}">✕</button>
             </div>
@@ -369,7 +464,7 @@ function renderLessons() {
   view.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { selDay = selDay === b.dataset.day ? null : b.dataset.day; haptic(); render(); });
   view.querySelectorAll('[data-wk]').forEach(b => b.onclick = () => { weekOff += parseInt(b.dataset.wk, 10); haptic(); render(); });
   view.querySelectorAll('[data-pay]').forEach(b => b.onclick = async () => { const l = db.lessons.find(x => x.id === b.dataset.pay); l.paid = !l.paid; haptic('medium'); await persist(); render(); });
-  view.querySelectorAll('[data-done]').forEach(b => b.onclick = async () => { db.lessons.find(x => x.id === b.dataset.done).status = 'done'; haptic('medium'); await persist(); render(); });
+  view.querySelectorAll('[data-done]').forEach(b => b.onclick = async () => { const l = db.lessons.find(x => x.id === b.dataset.done); l.status = 'done'; if (l.trial) l.paid = true; haptic('medium'); await persist(); render(); });
   view.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openLessonSheet(db.lessons.find(x => x.id === b.dataset.edit)));
   view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => confirmDlg('Удалить занятие?', async () => { db.lessons = db.lessons.filter(l => l.id !== b.dataset.del); await persist(); render(); }));
   const more = $('more'); if (more) more.onclick = () => { lessonLimit += 50; render(); };
@@ -379,14 +474,15 @@ function renderStudents() {
   view.innerHTML = `<h2 style="margin-top:44px">Ученики <span class="cnt">${db.students.length}</span></h2>` +
     (db.students.length ? db.students.map(s => {
       const ls = db.lessons.filter(l => l.studentId === s.id && l.status === 'done');
+      const pay = ls.filter(l => !l.trial);
       const h = ls.reduce((a, l) => a + hours(l), 0);
-      const debt = ls.filter(l => !l.paid).reduce((a, l) => a + sum(l), 0);
-      const pct = ls.length ? Math.round(ls.filter(l => l.paid).length / ls.length * 100) : 0;
+      const debt = pay.filter(l => !l.paid).reduce((a, l) => a + sum(l), 0);
+      const pct = pay.length ? Math.round(pay.filter(l => l.paid).length / pay.length * 100) : 0;
       return `<div class="card"><div class="row" style="gap:12px">${avatar(s)}
         <div class="grow"><b class="ellipsis" style="display:block">${esc(s.name)}</b><span class="hint">${esc(s.subject || 'без предмета')}</span></div>
         <div style="text-align:right"><b>${money(s.rate)}</b><div class="hint">за час</div></div></div>
         <div class="row hint" style="margin-top:10px"><span>🕒 ${money(h)} ч</span><span>📚 ${ls.length} зан.</span><span style="color:${debt ? 'var(--warn)' : 'var(--ok)'}">${debt ? 'долг ' + money(debt) : 'всё оплачено'}</span></div>
-        <div class="mini"><i style="width:${pct}%"></i></div><div class="hint" style="margin-top:3px">Оплачено ${pct}% занятий</div>
+        <div class="mini"><i style="width:${pct}%"></i></div><div class="hint" style="margin-top:3px">Оплачено ${pct}% платных занятий</div>
         <div class="actions"><button class="btn small ghost" data-edit="${s.id}">Изменить</button><button class="btn small danger" data-del="${s.id}">Удалить</button></div></div>`;
     }).join('') : `<div class="card empty"><span class="ico">🎓</span>Пока нет учеников. Нажмите «+»</div>`);
   view.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openStudentSheet(stu(b.dataset.edit)));
@@ -400,7 +496,7 @@ function renderTotals() {
   const byM = {};
   done.forEach(l => { const m = l.date.slice(0, 7); const o = byM[m] = byM[m] || {inc: 0, h: 0, exp: 0}; o.h += hours(l); o.exp += sum(l); if (l.paid) o.inc += sum(l); });
   const months = Object.keys(byM).sort().reverse();
-  const unpaid = done.filter(l => !l.paid).sort((a, b) => a.date.localeCompare(b.date));
+  const unpaid = done.filter(l => !l.paid && !l.trial).sort((a, b) => a.date.localeCompare(b.date));
   const tInc = months.reduce((s, m) => s + byM[m].inc, 0), tH = months.reduce((s, m) => s + byM[m].h, 0), debt = unpaid.reduce((s, l) => s + sum(l), 0);
   const mName = m => new Date(m + '-01T00:00').toLocaleDateString('ru-RU', {month: 'long', year: 'numeric'});
   view.innerHTML = `
@@ -414,7 +510,7 @@ function renderTotals() {
       <div class="hint">${money(byM[m].h)} ч · начислено ${money(byM[m].exp)}</div></div>`).join('') : `<div class="card empty"><span class="ico">🗓</span>Нет проведённых занятий</div>`}
     <h2>Неоплаченные занятия <span class="cnt">${unpaid.length}</span></h2>
     ${unpaid.length ? unpaid.map(l => `<div class="card"><div class="row"><b>${esc(stu(l.studentId)?.name || '—')}</b><b>${money(sum(l))}</b></div>
-      <div class="hint">${fmtDate(l.date)} ${esc(l.time)}${l.topic ? ' · ' + esc(l.topic) : ''}</div>
+      <div class="hint">${fmtDate(l.date)} ${esc(l.time)}${l.topic ? ' · ' + esc(l.topic) : ''}${hasCustom(l) ? ' · своя цена' : ''}</div>
       <div class="actions"><button class="btn small" data-pay="${l.id}">💳 Оплачено</button></div></div>`).join('') : `<div class="card empty"><span class="ico">🎉</span>Всё оплачено</div>`}`;
   view.querySelectorAll('[data-pay]').forEach(b => b.onclick = async () => { db.lessons.find(x => x.id === b.dataset.pay).paid = true; haptic('medium'); await persist(); render(); });
 }
@@ -424,12 +520,14 @@ function renderStats() {
   if (period !== 'all') { const d = new Date(); d.setDate(d.getDate() - parseInt(period, 10)); cutoff = ymd(d); }
   const ls = db.lessons.filter(l => l.date >= cutoff);
   const done = ls.filter(l => l.status === 'done'), canc = ls.filter(l => l.status === 'cancel'), plan = ls.filter(l => l.status === 'planned');
-  const paid = done.filter(l => l.paid), unpaid = done.filter(l => !l.paid);
-  const income = paid.reduce((s, l) => s + sum(l), 0), exp = done.reduce((s, l) => s + sum(l), 0), debt = unpaid.reduce((s, l) => s + sum(l), 0);
-  const hrs = done.reduce((s, l) => s + hours(l), 0);
-  const avg = done.length ? exp / done.length : 0, perHour = hrs ? exp / hrs : 0;
+  const trials = done.filter(l => l.trial);
+  const pay = done.filter(l => !l.trial);
+  const paid = pay.filter(l => l.paid), unpaid = pay.filter(l => !l.paid);
+  const income = paid.reduce((s, l) => s + sum(l), 0), exp = pay.reduce((s, l) => s + sum(l), 0), debt = unpaid.reduce((s, l) => s + sum(l), 0);
+  const hrs = done.reduce((s, l) => s + hours(l), 0), payHrs = pay.reduce((s, l) => s + hours(l), 0);
+  const avg = pay.length ? exp / pay.length : 0, perHour = payHrs ? exp / payHrs : 0;
   const cancelRate = done.length + canc.length ? Math.round(canc.length / (done.length + canc.length) * 100) : 0;
-  const paidRate = done.length ? Math.round(paid.length / done.length * 100) : 0;
+  const paidRate = pay.length ? Math.round(paid.length / pay.length * 100) : 0;
 
   const byM = {}; done.forEach(l => { const m = l.date.slice(0, 7); byM[m] = (byM[m] || 0) + (l.paid ? sum(l) : 0); });
   const mKeys = Object.keys(byM).sort().slice(-6), mMax = Math.max(1, ...mKeys.map(k => byM[k]));
@@ -442,7 +540,7 @@ function renderStats() {
   const wdh = [0, 0, 0, 0, 0, 0, 0]; done.forEach(l => { const g = new Date(l.date + 'T00:00').getDay(); wdh[(g + 6) % 7] += hours(l); });
   const wMax = Math.max(1, ...wdh), wNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
-  const seg = [[paid.length, 'var(--ok)', 'Оплачено'], [unpaid.length, 'var(--warn)', 'Не оплачено'], [canc.length, '#98a2b3', 'Отменено'], [plan.length, 'var(--plan)', 'Запланировано']];
+  const seg = [[paid.length, 'var(--ok)', 'Оплачено'], [unpaid.length, 'var(--warn)', 'Не оплачено'], [trials.length, 'var(--trial)', 'Пробные'], [canc.length, '#98a2b3', 'Отменено'], [plan.length, 'var(--plan)', 'Запланировано']];
   const tot = seg.reduce((a, x) => a + x[0], 0), R = 46, C = 2 * Math.PI * R; let off = 0;
   const arcs = seg.map(([n, col]) => { if (!n) return ''; const len = n / tot * C; const s = `<circle cx="64" cy="64" r="${R}" fill="none" stroke="${col}" stroke-width="16" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}"/>`; off += len; return s; }).join('');
 
@@ -452,7 +550,7 @@ function renderStats() {
     <div class="kpis">
       <div class="kpi k1"><b>${money(income)}</b><span>получено</span></div>
       <div class="kpi k2"><b>${money(hrs)} ч</b><span>проведено · ${done.length} зан.</span></div>
-      <div class="kpi k3"><b>${money(avg)}</b><span>средний чек</span></div>
+      <div class="kpi k3"><b>${money(avg)}</b><span>средний чек (без пробных)</span></div>
       <div class="kpi k4"><b>${money(perHour)}</b><span>средняя ставка в час</span></div>
     </div>
     <div class="card row"><span>💸 Не оплачено сейчас</span><b style="color:${debt ? 'var(--warn)' : 'var(--ok)'}">${money(debt)} · ${unpaid.length} зан.</b></div>
@@ -468,7 +566,8 @@ function renderStats() {
     <div class="card">${byS.length ? byS.map((x, i) => { const [a, b] = colorOf(x.s.id); return `<div class="hbar"><div class="top"><span>${esc(x.s.name)}</span><b>${money(x.h)} ч · ${money(x.inc)}</b></div>
       <div class="track"><div class="fill" style="width:${x.h / sMax * 100}%;background:linear-gradient(90deg,${a},${b});animation-delay:${i * 60}ms"></div></div></div>`; }).join('') : '<div class="empty">Нет данных</div>'}</div>
     <h2>Нагрузка по дням недели</h2>
-    <div class="card"><div class="bars" style="height:120px">${wdh.map((h, i) => `<div class="bcol"><div class="v">${h ? money(h) : ''}</div><div class="b" style="height:${Math.max(3, h / wMax * 100)}%;animation-delay:${i * 50}ms;${h ? '' : 'opacity:.25'}"></div><div class="l">${wNames[i]}</div></div>`).join('')}</div></div>`;
+    <div class="card"><div class="bars" style="height:120px">${wdh.map((h, i) => `<div class="bcol"><div class="v">${h ? money(h) : ''}</div><div class="b" style="height:${Math.max(3, h / wMax * 100)}%;animation-delay:${i * 50}ms;${h ? '' : 'opacity:.25'}"></div><div class="l">${wNames[i]}</div></div>`).join('')}</div></div>
+    ${achSection()}`;
   view.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { period = b.dataset.p; haptic(); render(); });
 }
 
@@ -503,13 +602,40 @@ function openLessonSheet(l) {
     <div class="two"><div><label>Длительность, мин</label><input id="l-dur" type="number" inputmode="numeric" value="${l?.duration || 60}"></div>
     <div><label>Статус</label><select id="l-status">${Object.entries(statusName).map(([k, t]) => `<option value="${k}" ${(l?.status || '') === k ? 'selected' : ''}>${t[0].toUpperCase() + t.slice(1)}</option>`).join('')}</select></div></div>
     <label>Тема</label><input id="l-topic" placeholder="Квадратные уравнения" value="${esc(l?.topic)}">
+    <label>Своя цена за занятие (необязательно)</label>
+    <input id="l-price" type="number" inputmode="decimal" placeholder="Оставьте пустым — по ставке ученика" value="${typeof l?.price === 'number' ? l.price : ''}">
+    <div class="calc" id="l-calc"></div>
+    <label class="chk" for="l-trial"><input id="l-trial" type="checkbox" ${l?.trial ? 'checked' : ''}><span>🎁 Пробное занятие (бесплатно)</span></label>
     <div style="height:14px"></div><button class="btn" id="l-save">${l ? 'Сохранить' : 'Добавить'}</button>`);
   if (!l) $('l-status').value = 'planned';
+  const updateCalc = () => {
+    const st = stu(val('l-stu')); if (!st) return;
+    const rate = l && l.studentId === st.id ? l.rate : st.rate;
+    const dur = parseInt(val('l-dur'), 10) || 0;
+    const trial = $('l-trial').checked;
+    $('l-price').disabled = trial;
+    $('l-calc').textContent = trial ? 'Занятие бесплатное: стоимость 0, в долги не попадёт' : `По ставке: ${money(rate * dur / 60)} (${money(rate)} за час)`;
+  };
+  ['l-stu', 'l-dur', 'l-trial'].forEach(id => $(id).addEventListener('input', updateCalc));
+  $('l-trial').addEventListener('change', updateCalc);
+  updateCalc();
   $('l-save').onclick = async () => {
     const studentId = val('l-stu'), date = val('l-date'), time = val('l-time'), duration = parseInt(val('l-dur'), 10), topic = val('l-topic').trim(), status = val('l-status');
+    const trial = $('l-trial').checked, priceRaw = val('l-price').trim(), priceNum = parseFloat(priceRaw);
     if (!date || !time || !duration) return alertMsg('Заполните дату, время и длительность');
-    if (l) { const x = db.lessons.find(y => y.id === l.id); if (x.studentId !== studentId) x.rate = stu(studentId).rate; Object.assign(x, {studentId, date, time, duration, topic, status}); if (status !== 'done') x.paid = false; }
-    else db.lessons.push({id: uid(), studentId, date, time, duration, topic, status, paid: false, rate: stu(studentId).rate});
+    if (priceRaw !== '' && (isNaN(priceNum) || priceNum < 0)) return alertMsg('Цена должна быть числом от нуля');
+    const price = !trial && priceRaw !== '' ? priceNum : null;
+    if (l) {
+      const x = db.lessons.find(y => y.id === l.id);
+      const wasTrial = !!x.trial;
+      if (x.studentId !== studentId) x.rate = stu(studentId).rate;
+      Object.assign(x, {studentId, date, time, duration, topic, status, trial, price});
+      if (status !== 'done') x.paid = false;
+      else if (trial) x.paid = true;
+      else if (wasTrial) x.paid = false;
+    } else {
+      db.lessons.push({id: uid(), studentId, date, time, duration, topic, status, trial, price, paid: trial && status === 'done', rate: stu(studentId).rate});
+    }
     haptic('medium'); closeSheet(); await persist(); render();
   };
 }
@@ -537,7 +663,7 @@ function openSettings() {
     if (!obj || !Array.isArray(obj.students) || !Array.isArray(obj.lessons)) return alertMsg('Это не похоже на копию трекера.');
     confirmDlg('Заменить текущие данные данными из копии?', async () => { db = obj; closeSheet(); await persist(); render(); });
   };
-  $('g-clear').onclick = () => confirmDlg('Удалить всех учеников и все занятия? Это нельзя отменить.', async () => { db = {students: [], lessons: [], goal: 0}; closeSheet(); await persist(); render(); });
+  $('g-clear').onclick = () => confirmDlg('Удалить всех учеников и все занятия? Это нельзя отменить.', async () => { db = {students: [], lessons: [], goal: 0, ach: {}}; closeSheet(); await persist(); render(); });
 }
 
 $('gear').onclick = () => { haptic(); openSettings(); };
@@ -554,11 +680,13 @@ $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => { tab = b.da
   try {
     const cl = await Storage.loadCloud();
     if (cl && (!cached || (cl.updated || 0) > (cached.updated || 0)) && !dirty) {
-      db = cl; Storage.cacheSet(db); render();
+      db = cl; Storage.cacheSet(db);
     } else if (cached && (!cl || (cached.updated || 0) > (cl.updated || 0))) {
       dirty = true; flush();
     }
   } catch (e) { console.error(e); setSync('error'); }
+  ready = true;
+  render();
 })();
 </script>
 </body>
