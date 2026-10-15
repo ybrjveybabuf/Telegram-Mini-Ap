@@ -97,6 +97,7 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .btn.ghost{background:transparent;color:var(--brand1);border:1.5px solid var(--brand1);box-shadow:none}
 .btn.danger{background:var(--bad);box-shadow:none}
 .btn.ok{background:var(--ok);box-shadow:none}
+.btn:disabled{opacity:.45}
 .empty{text-align:center;color:var(--hint);padding:36px 12px}
 .empty .ico{font-size:44px;display:block;margin-bottom:6px}
 .mini{height:6px;border-radius:6px;background:rgba(127,127,127,.2);overflow:hidden;margin-top:10px}
@@ -141,6 +142,15 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .ach .pg{margin-top:auto}
 .ach .pg .mini{margin-top:6px}
 .ach .pg small{font-size:11px;color:var(--hint)}
+
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 4px}
+.fbox{background:var(--card);border-radius:14px;padding:10px 6px;text-align:center}
+.fbox b{display:block;font-size:17px}
+.fbox span{font-size:11px;color:var(--hint)}
+.prev{margin-top:12px;padding:12px;border-radius:12px;font-size:14px;background:linear-gradient(135deg,rgba(34,168,103,.16),rgba(25,195,176,.16))}
+.prev small{display:block;color:var(--hint);margin-top:4px;font-size:12px;line-height:1.4}
+.hist{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid rgba(127,127,127,.15);font-size:13.5px}
+.hist:last-child{border-bottom:0}
 
 .toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translate(-50%,-140%);z-index:60;max-width:90%;
   padding:12px 18px;border-radius:16px;color:#fff;font-weight:600;font-size:14px;text-align:center;
@@ -255,6 +265,7 @@ const $ = id => document.getElementById(id);
 const view = $('view');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const money = n => (Math.round(n * 100) / 100).toLocaleString('ru-RU');
+const cents = n => Math.round((Number(n) || 0) * 100);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const stu = id => db.students.find(s => s.id === id);
 const hours = l => (l.duration || 60) / 60;
@@ -362,6 +373,80 @@ function achSection() {
       return `<div class="ach locked"><div class="ic">${a.icon}</div><b>${a.title}</b><div class="d">${a.desc}</div>
         <div class="pg"><div class="mini"><i style="width:${pct}%"></i></div><small>${money(cur)} / ${money(a.target)}${a.unit ? ' ' + a.unit : ''}</small></div></div>`;
     }).join('')}</div>`;
+}
+
+/* ===== Средства ученика: оплата от самых старых занятий к новым ===== */
+function unpaidQueue(st) {
+  return db.lessons
+    .filter(l => l.studentId === st.id && l.status === 'done' && !l.trial && !l.paid && cents(sum(l)) > 0)
+    .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+}
+function planPayment(st, amount) {
+  const total = cents(st.balance) + cents(amount);
+  let left = total;
+  const pay = [];
+  for (const l of unpaidQueue(st)) {
+    const c = cents(sum(l));
+    if (left >= c) { pay.push(l); left -= c; } else break;
+  }
+  return {pay, left: left / 100, total: total / 100};
+}
+
+function openFundsSheet(studentId) {
+  const st = stu(studentId); if (!st) return;
+  const q = unpaidQueue(st);
+  const debt = q.reduce((a, l) => a + cents(sum(l)), 0) / 100;
+  const hist = (st.payments || []).slice(-5).reverse();
+  openSheet(`<h3>💵 Средства — ${esc(st.name)}</h3>
+    <div class="fgrid">
+      <div class="fbox"><b style="color:var(--ok)">${money(st.balance || 0)}</b><span>аванс</span></div>
+      <div class="fbox"><b style="color:${debt ? 'var(--warn)' : 'var(--ok)'}">${money(debt)}</b><span>долг</span></div>
+      <div class="fbox"><b>${q.length}</b><span>неоплачено зан.</span></div>
+    </div>
+    <label>Сумма, которую внёс ученик</label>
+    <input id="f-amount" type="number" inputmode="decimal" placeholder="Например, 100">
+    <div class="prev" id="f-prev"></div>
+    <div style="height:12px"></div>
+    <button class="btn" id="f-apply">Внести и распределить</button>
+    ${hist.length ? `<h3 style="margin-top:22px;font-size:16px">История платежей</h3>
+      ${hist.map(p => `<div class="hist"><span>${fmtDate(p.date)}</span><span><b>+${money(p.amount)}</b> · оплачено ${p.ids.length} зан.</span></div>`).join('')}
+      <div style="height:10px"></div><button class="btn ghost" id="f-undo">Отменить последний платёж</button>` : ''}`);
+  const update = () => {
+    const raw = val('f-amount').trim(), amount = raw === '' ? 0 : parseFloat(raw);
+    const bad = isNaN(amount) || amount < 0;
+    const plan = planPayment(st, bad ? 0 : amount);
+    const prev = $('f-prev'), btn = $('f-apply');
+    if (bad) { prev.innerHTML = 'Введите сумму числом, не меньше нуля'; btn.disabled = true; return; }
+    const hasBal = cents(st.balance) > 0;
+    btn.disabled = amount === 0 && !hasBal;
+    const spent = plan.total - plan.left;
+    const list = plan.pay.slice(0, 6).map(l => `${fmtDate(l.date)} (${money(sum(l))})`).join(', ') + (plan.pay.length > 6 ? ` и ещё ${plan.pay.length - 6}` : '');
+    prev.innerHTML = `<b>Будет оплачено: ${plan.pay.length} зан. на ${money(spent)}</b>
+      <div>Остаток в аванс: <b>${money(plan.left)}</b>${hasBal ? ` <span class="hint">(с учётом аванса ${money(st.balance)})</span>` : ''}</div>
+      <small>${plan.pay.length ? 'Порядок: от самых старых к новым — ' + list : (q.length ? 'Денег пока не хватает на самое старое занятие, сумма уйдёт в аванс.' : 'Неоплаченных занятий нет, сумма уйдёт в аванс.')}</small>`;
+  };
+  $('f-amount').addEventListener('input', update);
+  update();
+  $('f-apply').onclick = async () => {
+    const raw = val('f-amount').trim(), amount = raw === '' ? 0 : parseFloat(raw);
+    if (isNaN(amount) || amount < 0) return alertMsg('Введите сумму числом');
+    const plan = planPayment(st, amount);
+    if (amount === 0 && cents(st.balance) === 0) return;
+    const rec = {id: uid(), date: todayStr(), amount, ids: plan.pay.map(l => l.id), balBefore: st.balance || 0, balAfter: plan.left};
+    plan.pay.forEach(l => { l.paid = true; });
+    st.balance = plan.left;
+    st.payments = (st.payments || []).concat(rec).slice(-20);
+    haptic('medium'); closeSheet();
+    toast(`✔ Оплачено ${plan.pay.length} зан. · аванс ${money(plan.left)}`);
+    await persist(); render();
+  };
+  const undo = $('f-undo');
+  if (undo) undo.onclick = () => confirmDlg('Отменить последний платёж? Занятия снова станут неоплаченными.', async () => {
+    const last = (st.payments || []).pop(); if (!last) return;
+    last.ids.forEach(id => { const l = db.lessons.find(x => x.id === id); if (l) l.paid = false; });
+    st.balance = last.balBefore || 0;
+    closeSheet(); toast('Платёж отменён'); await persist(); render();
+  });
 }
 
 /* ===== Шапка ===== */
@@ -478,13 +563,16 @@ function renderStudents() {
       const h = ls.reduce((a, l) => a + hours(l), 0);
       const debt = pay.filter(l => !l.paid).reduce((a, l) => a + sum(l), 0);
       const pct = pay.length ? Math.round(pay.filter(l => l.paid).length / pay.length * 100) : 0;
+      const bal = s.balance || 0;
       return `<div class="card"><div class="row" style="gap:12px">${avatar(s)}
         <div class="grow"><b class="ellipsis" style="display:block">${esc(s.name)}</b><span class="hint">${esc(s.subject || 'без предмета')}</span></div>
         <div style="text-align:right"><b>${money(s.rate)}</b><div class="hint">за час</div></div></div>
         <div class="row hint" style="margin-top:10px"><span>🕒 ${money(h)} ч</span><span>📚 ${ls.length} зан.</span><span style="color:${debt ? 'var(--warn)' : 'var(--ok)'}">${debt ? 'долг ' + money(debt) : 'всё оплачено'}</span></div>
+        ${bal > 0 ? `<div class="hint" style="margin-top:6px;color:var(--ok)">💵 Аванс: <b>${money(bal)}</b></div>` : ''}
         <div class="mini"><i style="width:${pct}%"></i></div><div class="hint" style="margin-top:3px">Оплачено ${pct}% платных занятий</div>
-        <div class="actions"><button class="btn small ghost" data-edit="${s.id}">Изменить</button><button class="btn small danger" data-del="${s.id}">Удалить</button></div></div>`;
+        <div class="actions"><button class="btn small ok" data-funds="${s.id}">💵 Средства</button><button class="btn small ghost" data-edit="${s.id}">Изменить</button><button class="btn small danger" data-del="${s.id}">Удалить</button></div></div>`;
     }).join('') : `<div class="card empty"><span class="ico">🎓</span>Пока нет учеников. Нажмите «+»</div>`);
+  view.querySelectorAll('[data-funds]').forEach(b => b.onclick = () => { haptic(); openFundsSheet(b.dataset.funds); });
   view.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openStudentSheet(stu(b.dataset.edit)));
   view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => confirmDlg('Удалить ученика и все его занятия?', async () => {
     const id = b.dataset.del; db.students = db.students.filter(s => s.id !== id); db.lessons = db.lessons.filter(l => l.studentId !== id); await persist(); render();
@@ -587,7 +675,7 @@ function openStudentSheet(s) {
   $('s-save').onclick = async () => {
     const name = val('s-name').trim(), subject = val('s-subj').trim(), rate = parseFloat(val('s-rate'));
     if (!name || isNaN(rate)) return alertMsg('Укажите имя и ставку');
-    if (s) Object.assign(stu(s.id), {name, subject, rate}); else db.students.push({id: uid(), name, subject, rate});
+    if (s) Object.assign(stu(s.id), {name, subject, rate}); else db.students.push({id: uid(), name, subject, rate, balance: 0, payments: []});
     haptic('medium'); closeSheet(); await persist(); render();
   };
 }
