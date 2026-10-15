@@ -19,7 +19,8 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0}
 body{font:15px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:110px;overflow-x:hidden}
-.hero{position:relative;padding:calc(18px + env(safe-area-inset-top)) 18px 54px;color:#fff;
+button{font-family:inherit}
+.hero{position:relative;padding:calc(16px + env(safe-area-inset-top)) 18px 58px;color:#fff;
   background:linear-gradient(135deg,var(--brand1),var(--brand3) 55%,var(--brand2));
   border-radius:0 0 34px 34px;overflow:hidden}
 .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.12)}
@@ -29,10 +30,14 @@ body{font:15px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif;background:var(--
 .hero-top img{width:46px;height:46px;border-radius:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);background:#fff3}
 .hero-top h1{font-size:19px;margin:0;line-height:1.15}
 .hero-top small{opacity:.85}
-.hero-sum{position:relative;z-index:1;margin-top:16px}
+.gear{margin-left:auto;width:38px;height:38px;border-radius:12px;border:0;background:rgba(255,255,255,.2);color:#fff;font-size:18px}
+.sync{position:relative;z-index:1;display:inline-block;margin-top:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.2);font-size:11.5px}
+.hero-sum{position:relative;z-index:1;margin-top:12px}
 .hero-sum .big{font-size:34px;font-weight:800;letter-spacing:-.5px}
-.hero-sum .sub{opacity:.88;font-size:13px}
-main{padding:0 14px;margin-top:-30px;position:relative;z-index:2}
+.hero-sum .sub{opacity:.9;font-size:13px}
+.goalbar{height:8px;border-radius:8px;background:rgba(255,255,255,.28);margin:10px 0 4px;overflow:hidden}
+.goalbar i{display:block;height:100%;width:0;border-radius:8px;background:#fff;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+main{padding:0 14px;margin-top:-34px;position:relative;z-index:2}
 .card{background:var(--card);border-radius:var(--radius);padding:14px;margin:12px 0;box-shadow:var(--shadow);animation:rise .35s ease both}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .noanim .card,.noanim .kpi{animation:none}
@@ -48,7 +53,6 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .tabs button{flex:1;border:0;background:none;color:var(--hint);padding:8px 0 6px;border-radius:20px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:.25s}
 .tabs button span{font-size:19px;line-height:1}
 .tabs button.active{color:#fff;background:linear-gradient(135deg,var(--brand1),var(--brand3));box-shadow:0 4px 12px rgba(43,108,255,.45)}
-
 .fab{position:fixed;right:20px;bottom:calc(92px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:0;color:#fff;font-size:30px;line-height:1;
   background:linear-gradient(135deg,var(--brand2),var(--brand1));box-shadow:0 8px 22px rgba(25,195,176,.5);z-index:21;transition:transform .2s}
 .fab:active{transform:scale(.92)}
@@ -56,8 +60,24 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 
 .chips{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:none;padding:7px 14px;border-radius:20px;border:0;background:var(--card);color:var(--text);font-size:13px;box-shadow:var(--shadow)}
+.chip{flex:none;padding:7px 12px;border-radius:20px;border:0;background:var(--card);color:var(--text);font-size:13px;box-shadow:var(--shadow);display:flex;align-items:center;gap:6px}
+.chip em{font-style:normal;font-size:11px;min-width:18px;text-align:center;padding:1px 6px;border-radius:10px;background:rgba(127,127,127,.2)}
 .chip.active{background:linear-gradient(135deg,var(--brand1),var(--brand3));color:#fff}
+.chip.active em{background:rgba(255,255,255,.28)}
+
+.today{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(43,108,255,.14),rgba(25,195,176,.14))}
+.today .ico{font-size:30px}
+.wk .row{margin-bottom:8px}
+.nav{width:32px;height:32px;border-radius:10px;border:0;background:rgba(127,127,127,.15);color:var(--text);font-size:18px}
+.wkrow{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.wdb{border:0;background:rgba(127,127,127,.1);color:var(--text);border-radius:14px;padding:7px 0 5px;display:flex;flex-direction:column;align-items:center;gap:1px;transition:.2s}
+.wdb small{font-size:10.5px;color:var(--hint)}
+.wdb b{font-size:15px}
+.wdb i{font-style:normal;font-size:10px;height:14px;min-width:14px;line-height:14px;border-radius:7px;color:#fff;padding:0 4px}
+.wdb i.dot{background:var(--brand2)}
+.wdb.today{outline:2px solid var(--brand1)}
+.wdb.sel{background:linear-gradient(135deg,var(--brand1),var(--brand3));color:#fff}
+.wdb.sel small{color:#fffd}
 
 .day{font-size:13px;font-weight:700;color:var(--hint);margin:16px 6px 4px;text-transform:capitalize}
 .lesson{display:flex;gap:12px;align-items:stretch;padding:12px;border-left:5px solid var(--c1)}
@@ -67,6 +87,7 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;color:#fff;font-weight:600}
 .t-done{background:var(--ok)}.t-cancel{background:var(--hint)}.t-planned{background:var(--plan)}
 .t-unpaid{background:var(--warn)}.t-paid{background:var(--brand1)}
+.meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--hint);font-size:12.5px;margin-top:3px}
 .actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 .btn{border:0;border-radius:12px;padding:11px 16px;font-size:15px;font-weight:600;color:#fff;width:100%;
   background:linear-gradient(135deg,var(--brand1),var(--brand3));box-shadow:0 5px 14px rgba(43,108,255,.35)}
@@ -76,6 +97,8 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .btn.ok{background:var(--ok);box-shadow:none}
 .empty{text-align:center;color:var(--hint);padding:36px 12px}
 .empty .ico{font-size:44px;display:block;margin-bottom:6px}
+.mini{height:6px;border-radius:6px;background:rgba(127,127,127,.2);overflow:hidden;margin-top:10px}
+.mini i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--brand2),var(--ok))}
 
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .kpi{border-radius:var(--radius);padding:14px;color:#fff;box-shadow:var(--shadow);animation:rise .4s ease both}
@@ -85,12 +108,10 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .k2{background:linear-gradient(135deg,#19c3b0,#12a58f)}
 .k3{background:linear-gradient(135deg,#7c4dff,#a07bff)}
 .k4{background:linear-gradient(135deg,#f0a020,#ff7a45)}
-
 .bars{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:18px}
 .bcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
 .bcol .v{font-size:10.5px;color:var(--hint);margin-bottom:3px;white-space:nowrap}
-.bcol .b{width:100%;max-width:38px;border-radius:9px 9px 3px 3px;background:linear-gradient(180deg,var(--brand2),var(--brand1));
-  transform-origin:bottom;animation:grow .7s cubic-bezier(.2,.8,.2,1) both}
+.bcol .b{width:100%;max-width:38px;border-radius:9px 9px 3px 3px;background:linear-gradient(180deg,var(--brand2),var(--brand1));transform-origin:bottom;animation:grow .7s cubic-bezier(.2,.8,.2,1) both}
 .bcol .l{font-size:11px;margin-top:5px;color:var(--hint)}
 @keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 .hbar{margin:9px 0}
@@ -114,8 +135,9 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .grab{width:42px;height:5px;border-radius:5px;background:var(--hint);opacity:.4;margin:4px auto 12px}
 .sheet h3{margin:0 0 8px;font-size:19px}
 label{display:block;font-size:12px;color:var(--hint);margin:10px 2px 2px}
-input,select{width:100%;padding:12px;border-radius:12px;border:1.5px solid rgba(127,127,127,.25);background:var(--card);color:var(--text);font-size:16px;outline:none}
-input:focus,select:focus{border-color:var(--brand1)}
+input,select,textarea{width:100%;padding:12px;border-radius:12px;border:1.5px solid rgba(127,127,127,.25);background:var(--card);color:var(--text);font-size:16px;outline:none;font-family:inherit}
+textarea{min-height:90px;resize:vertical;font-size:13px}
+input:focus,select:focus,textarea:focus{border-color:var(--brand1)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 </style>
 </head>
@@ -125,10 +147,13 @@ input:focus,select:focus{border-color:var(--brand1)}
   <div class="hero-top">
     <img src="logo.png" alt="" onerror="this.style.display='none'">
     <div><h1>Трекер репетитора</h1><small id="hello">Добро пожаловать</small></div>
+    <button class="gear" id="gear">⚙</button>
   </div>
+  <div class="sync" id="sync">☁ загрузка…</div>
   <div class="hero-sum">
     <div class="sub">Доход в этом месяце</div>
     <div class="big" id="heroIncome">0</div>
+    <div class="goalbar"><i id="goalFill"></i></div>
     <div class="sub" id="heroSub"></div>
   </div>
 </div>
@@ -152,21 +177,25 @@ if (tg) {
   tg.ready(); tg.expand();
   try { tg.setHeaderColor && tg.setHeaderColor('secondary_bg_color'); } catch (e) {}
 }
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 const haptic = (t = 'light') => { try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t); } catch (e) {} };
 
 /* ===== Слой хранения (для варианта Б заменить этот блок) ===== */
 const Storage = (() => {
   const CHUNK = 1800, P = 'db';
   const hasCloud = !!(tg && tg.CloudStorage && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9'));
+  const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+  const CK = 'db_cache' + (tgUser ? '_' + tgUser.id : '');
   const cloud = {
     get: keys => new Promise((res, rej) => tg.CloudStorage.getItems(keys, (e, v) => e ? rej(e) : res(v))),
     set: (k, v) => new Promise((res, rej) => tg.CloudStorage.setItem(k, v, (e, ok) => e ? rej(e) : res(ok))),
     del: keys => new Promise((res, rej) => tg.CloudStorage.removeItems(keys, (e, ok) => e ? rej(e) : res(ok)))
   };
   let last = [];
-  const cacheGet = () => { try { return JSON.parse(localStorage.getItem('db_cache')); } catch { return null; } };
-  const cacheSet = d => { try { localStorage.setItem('db_cache', JSON.stringify(d)); } catch {} };
-
+  const cacheGet = () => {
+    try { return JSON.parse(localStorage.getItem(CK)) || (!tgUser ? null : null); } catch { return null; }
+  };
+  const cacheSet = d => { try { localStorage.setItem(CK, JSON.stringify(d)); } catch {} };
   async function loadCloud() {
     if (!hasCloud) return null;
     const meta = await cloud.get([P + ':n']);
@@ -177,7 +206,6 @@ const Storage = (() => {
     last = keys.map(k => parts[k] || '');
     return JSON.parse(last.join(''));
   }
-
   async function saveCloud(data) {
     if (!hasCloud) return;
     const json = JSON.stringify(data), chunks = [];
@@ -191,12 +219,12 @@ const Storage = (() => {
     }
     last = chunks;
   }
-  return {cacheGet, cacheSet, loadCloud, saveCloud};
+  return {hasCloud, cacheGet, cacheSet, loadCloud, saveCloud};
 })();
 
 /* ===== Состояние и утилиты ===== */
-let db = {students: [], lessons: []};
-let tab = 'lessons', lessonFilter = 'all', period = 'all', lessonLimit = 50;
+let db = {students: [], lessons: [], goal: 0};
+let tab = 'lessons', lessonFilter = 'all', period = 'all', lessonLimit = 50, selDay = null, weekOff = 0;
 const $ = id => document.getElementById(id);
 const view = $('view');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -206,7 +234,9 @@ const stu = id => db.students.find(s => s.id === id);
 const hours = l => (l.duration || 60) / 60;
 const sum = l => l.rate * hours(l);
 const fmtDate = d => d.split('-').reverse().join('.');
-const todayStr = () => { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+const p2 = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+const todayStr = () => ymd(new Date());
 const PALETTE = [['#2b6cff','#5b8cff'],['#19c3b0','#12a58f'],['#7c4dff','#a07bff'],['#f0a020','#ff7a45'],['#e5484d','#ff7b80'],['#0ea5e9','#38bdf8'],['#22a867','#4ade80']];
 const colorOf = id => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return PALETTE[h % PALETTE.length]; };
 const avatar = s => { const [a, b] = colorOf(s.id); return `<div class="avatar" style="background:linear-gradient(135deg,${a},${b})">${esc((s.name || '?').trim()[0]?.toUpperCase())}</div>`; };
@@ -214,22 +244,26 @@ const alertMsg = m => tg && tg.showAlert ? tg.showAlert(m) : alert(m);
 const confirmDlg = (m, cb) => tg && tg.showConfirm ? tg.showConfirm(m, ok => ok && cb()) : (confirm(m) && cb());
 const statusName = {done: 'проведено', cancel: 'отменено', planned: 'запланировано'};
 
-/* ===== Быстрое сохранение: экран обновляется сразу, запись в облако в фоне ===== */
+/* ===== Индикатор синхронизации ===== */
+const SYNC = {pending: '☁ сохраняю…', saving: '☁ сохраняю…', saved: '☁ сохранено', local: '💾 хранится на устройстве', error: '⚠ нет связи, повторю'};
+const setSync = k => { const e = $('sync'); if (e) e.textContent = SYNC[k]; };
+
+/* ===== Быстрое сохранение ===== */
 let saveTimer = null, saving = false, dirty = false;
 async function flush() {
   clearTimeout(saveTimer);
   if (saving) { saveTimer = setTimeout(flush, 300); return; }
   if (!dirty) return;
-  saving = true; dirty = false;
-  try { await Storage.saveCloud(db); }
-  catch (e) { dirty = true; console.error(e); }
+  saving = true; dirty = false; setSync('saving');
+  try { await Storage.saveCloud(db); if (!dirty) setSync(Storage.hasCloud ? 'saved' : 'local'); }
+  catch (e) { dirty = true; setSync('error'); console.error(e); }
   saving = false;
   if (dirty) saveTimer = setTimeout(flush, 2000);
 }
 function persist() {
   db.updated = Date.now();
   Storage.cacheSet(db);
-  dirty = true;
+  dirty = true; setSync('pending');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(flush, 400);
   return Promise.resolve();
@@ -246,7 +280,11 @@ function renderHero() {
   const inc = ls.filter(l => l.paid).reduce((s, l) => s + sum(l), 0);
   const h = ls.reduce((s, l) => s + hours(l), 0);
   $('heroIncome').textContent = money(inc);
-  $('heroSub').textContent = `${ls.length} занятий · ${money(h)} ч в этом месяце`;
+  const goal = db.goal || 0;
+  $('goalFill').style.width = goal ? Math.min(100, inc / goal * 100) + '%' : '0%';
+  $('heroSub').textContent = goal
+    ? `Цель ${money(goal)} · выполнено ${Math.min(999, Math.round(inc / goal * 100))}% · ${ls.length} зан., ${money(h)} ч`
+    : `${ls.length} занятий · ${money(h)} ч · цель задаётся в ⚙`;
 }
 
 /* ===== Рендер ===== */
@@ -257,25 +295,53 @@ function render() {
   ({lessons: renderLessons, students: renderStudents, totals: renderTotals, stats: renderStats})[tab]();
 }
 
+function weekStrip() {
+  const t = new Date(todayStr() + 'T00:00');
+  t.setDate(t.getDate() - ((t.getDay() + 6) % 7) + weekOff * 7);
+  const names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], now = todayStr();
+  let h = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(t); d.setDate(t.getDate() + i);
+    const s = ymd(d), n = db.lessons.filter(l => l.date === s && l.status !== 'cancel').length;
+    h += `<button class="wdb ${s === now ? 'today' : ''} ${s === selDay ? 'sel' : ''}" data-day="${s}"><small>${names[i]}</small><b>${d.getDate()}</b><i class="${n ? 'dot' : ''}">${n || ''}</i></button>`;
+  }
+  const label = t.toLocaleDateString('ru-RU', {month: 'long', year: 'numeric'});
+  return `<div class="card wk"><div class="row"><button class="nav" data-wk="-1">‹</button><b style="text-transform:capitalize">${label}</b><button class="nav" data-wk="1">›</button></div><div class="wkrow">${h}</div></div>`;
+}
+
+function todayCard(now) {
+  const td = db.lessons.filter(l => l.date === now && l.status !== 'cancel').sort((a, b) => a.time.localeCompare(b.time));
+  const nowT = new Date().toTimeString().slice(0, 5);
+  const next = td.find(l => l.time >= nowT);
+  let txt;
+  if (!td.length) txt = '<b>Сегодня свободно</b><div class="hint">Занятий не запланировано</div>';
+  else txt = `<b>Сегодня: ${td.length} ${td.length === 1 ? 'занятие' : 'занятий'}</b><div class="hint">${next ? `Ближайшее в ${esc(next.time)} · ${esc(stu(next.studentId)?.name || '—')}` : 'Все на сегодня уже позади'}</div>`;
+  return `<div class="card today"><div class="ico">${td.length ? '🔔' : '☕'}</div><div>${txt}</div></div>`;
+}
+
 function renderLessons() {
   const now = todayStr();
-  let list = [...db.lessons];
-  if (lessonFilter === 'upcoming') list = list.filter(l => l.status === 'planned' || (l.date >= now && l.status !== 'cancel'));
-  if (lessonFilter === 'unpaid') list = list.filter(l => l.status === 'done' && !l.paid);
+  const flt = {
+    all: l => true,
+    upcoming: l => l.status === 'planned' || (l.date >= now && l.status !== 'cancel'),
+    done: l => l.status === 'done',
+    unpaid: l => l.status === 'done' && !l.paid,
+    cancel: l => l.status === 'cancel'
+  };
+  const chips = [['all', 'Все'], ['upcoming', 'Предстоящие'], ['done', 'Проведены'], ['unpaid', 'Неоплаченные'], ['cancel', 'Отменены']];
+  let list = db.lessons.filter(selDay ? l => l.date === selDay : flt[lessonFilter]);
   list.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
-  if (lessonFilter === 'upcoming') list.reverse();
+  if (lessonFilter === 'upcoming' && !selDay) list.reverse();
+  if (selDay) list.reverse();
   const totalCount = list.length;
   list = list.slice(0, lessonLimit);
   const groups = {};
   list.forEach(l => (groups[l.date] = groups[l.date] || []).push(l));
-  const dayLabel = d => {
-    if (d === now) return 'Сегодня';
-    const dt = new Date(d + 'T00:00');
-    return dt.toLocaleDateString('ru-RU', {weekday: 'long', day: 'numeric', month: 'long'});
-  };
-  const chips = [['all', 'Все'], ['upcoming', 'Предстоящие'], ['unpaid', 'Неоплаченные']];
+  const dayLabel = d => d === now ? 'Сегодня' : new Date(d + 'T00:00').toLocaleDateString('ru-RU', {weekday: 'long', day: 'numeric', month: 'long'});
   view.innerHTML = `
-    <div class="chips">${chips.map(([k, t]) => `<button class="chip ${lessonFilter === k ? 'active' : ''}" data-f="${k}">${t}</button>`).join('')}</div>
+    ${db.students.length ? todayCard(now) + weekStrip() : ''}
+    <div class="chips">${chips.map(([k, t]) => `<button class="chip ${!selDay && lessonFilter === k ? 'active' : ''}" data-f="${k}">${t}<em>${db.lessons.filter(flt[k]).length}</em></button>`).join('')}</div>
+    ${selDay ? `<div class="hint" style="margin:0 6px">Показан день ${fmtDate(selDay)} · нажмите на него ещё раз, чтобы сбросить</div>` : ''}
     ${!db.students.length ? `<div class="card empty"><span class="ico">🎓</span>Сначала добавьте ученика на вкладке «Ученики»</div>` :
       !list.length ? `<div class="card empty"><span class="ico">📭</span>Здесь пока пусто. Нажмите «+», чтобы добавить занятие</div>` :
       Object.keys(groups).map(d => `<div class="day">${dayLabel(d)}</div>` + groups[d].map(l => {
@@ -284,8 +350,8 @@ function renderLessons() {
           <div class="time"><b>${esc(l.time)}</b><span class="hint">${l.duration} мин</span></div>
           <div class="grow">
             <div class="row"><b class="ellipsis">${esc(s.name)}</b><span class="tag t-${l.status}">${statusName[l.status]}</span></div>
-            <div class="hint ellipsis">${esc(s.subject || '')}${l.topic ? ' · ' + esc(l.topic) : ''}</div>
-            <div class="row" style="margin-top:4px"><b>${money(sum(l))}</b>
+            <div class="meta">${s.subject ? `<span>📚 ${esc(s.subject)}</span>` : ''}<span>⏱ ${l.duration} мин</span>${l.topic ? `<span>📖 ${esc(l.topic)}</span>` : ''}</div>
+            <div class="row" style="margin-top:6px"><b>${money(sum(l))}</b>
               ${l.status === 'done' ? `<span class="tag ${l.paid ? 't-paid' : 't-unpaid'}">${l.paid ? 'оплачено' : 'не оплачено'}</span>` : ''}</div>
             <div class="actions">
               ${l.status === 'planned' ? `<button class="btn small ok" data-done="${l.id}">✔ Проведено</button>` : ''}
@@ -296,7 +362,9 @@ function renderLessons() {
           </div></div>`;
       }).join('')).join('')}
     ${totalCount > lessonLimit ? `<button class="btn ghost" id="more" style="margin-top:12px">Показать ещё (${totalCount - lessonLimit})</button>` : ''}`;
-  view.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { lessonFilter = b.dataset.f; lessonLimit = 50; haptic(); render(); });
+  view.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { lessonFilter = b.dataset.f; selDay = null; lessonLimit = 50; haptic(); render(); });
+  view.querySelectorAll('[data-day]').forEach(b => b.onclick = () => { selDay = selDay === b.dataset.day ? null : b.dataset.day; haptic(); render(); });
+  view.querySelectorAll('[data-wk]').forEach(b => b.onclick = () => { weekOff += parseInt(b.dataset.wk, 10); haptic(); render(); });
   view.querySelectorAll('[data-pay]').forEach(b => b.onclick = async () => { const l = db.lessons.find(x => x.id === b.dataset.pay); l.paid = !l.paid; haptic('medium'); await persist(); render(); });
   view.querySelectorAll('[data-done]').forEach(b => b.onclick = async () => { db.lessons.find(x => x.id === b.dataset.done).status = 'done'; haptic('medium'); await persist(); render(); });
   view.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openLessonSheet(db.lessons.find(x => x.id === b.dataset.edit)));
@@ -305,15 +373,17 @@ function renderLessons() {
 }
 
 function renderStudents() {
-  view.innerHTML = `<h2>Ученики <span class="cnt">${db.students.length}</span></h2>` +
+  view.innerHTML = `<h2 style="margin-top:34px">Ученики <span class="cnt">${db.students.length}</span></h2>` +
     (db.students.length ? db.students.map(s => {
       const ls = db.lessons.filter(l => l.studentId === s.id && l.status === 'done');
       const h = ls.reduce((a, l) => a + hours(l), 0);
       const debt = ls.filter(l => !l.paid).reduce((a, l) => a + sum(l), 0);
+      const pct = ls.length ? Math.round(ls.filter(l => l.paid).length / ls.length * 100) : 0;
       return `<div class="card"><div class="row" style="gap:12px">${avatar(s)}
         <div class="grow"><b class="ellipsis" style="display:block">${esc(s.name)}</b><span class="hint">${esc(s.subject || 'без предмета')}</span></div>
         <div style="text-align:right"><b>${money(s.rate)}</b><div class="hint">за час</div></div></div>
         <div class="row hint" style="margin-top:10px"><span>🕒 ${money(h)} ч</span><span>📚 ${ls.length} зан.</span><span style="color:${debt ? 'var(--warn)' : 'var(--ok)'}">${debt ? 'долг ' + money(debt) : 'всё оплачено'}</span></div>
+        <div class="mini"><i style="width:${pct}%"></i></div><div class="hint" style="margin-top:3px">Оплачено ${pct}% занятий</div>
         <div class="actions"><button class="btn small ghost" data-edit="${s.id}">Изменить</button><button class="btn small danger" data-del="${s.id}">Удалить</button></div></div>`;
     }).join('') : `<div class="card empty"><span class="ico">🎓</span>Пока нет учеников. Нажмите «+»</div>`);
   view.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openStudentSheet(stu(b.dataset.edit)));
@@ -331,7 +401,7 @@ function renderTotals() {
   const tInc = months.reduce((s, m) => s + byM[m].inc, 0), tH = months.reduce((s, m) => s + byM[m].h, 0), debt = unpaid.reduce((s, l) => s + sum(l), 0);
   const mName = m => new Date(m + '-01T00:00').toLocaleDateString('ru-RU', {month: 'long', year: 'numeric'});
   view.innerHTML = `
-    <div class="kpis" style="margin-top:12px">
+    <div class="kpis" style="margin-top:40px">
       <div class="kpi k2"><b>${money(tInc)}</b><span>доход (оплачено)</span></div>
       <div class="kpi k1"><b>${money(tH)} ч</b><span>отработано</span></div>
       <div class="kpi k4" style="grid-column:span 2"><b>${money(debt)}</b><span>ожидает оплаты · ${unpaid.length} зан.</span></div>
@@ -348,11 +418,11 @@ function renderTotals() {
 
 function renderStats() {
   let cutoff = '';
-  if (period !== 'all') { const d = new Date(); d.setDate(d.getDate() - parseInt(period, 10)); cutoff = new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); }
+  if (period !== 'all') { const d = new Date(); d.setDate(d.getDate() - parseInt(period, 10)); cutoff = ymd(d); }
   const ls = db.lessons.filter(l => l.date >= cutoff);
   const done = ls.filter(l => l.status === 'done'), canc = ls.filter(l => l.status === 'cancel'), plan = ls.filter(l => l.status === 'planned');
   const paid = done.filter(l => l.paid), unpaid = done.filter(l => !l.paid);
-  const income = paid.reduce((s, l) => s + sum(l), 0), exp = done.reduce((s, l) => s + sum(l), 0);
+  const income = paid.reduce((s, l) => s + sum(l), 0), exp = done.reduce((s, l) => s + sum(l), 0), debt = unpaid.reduce((s, l) => s + sum(l), 0);
   const hrs = done.reduce((s, l) => s + hours(l), 0);
   const avg = done.length ? exp / done.length : 0, perHour = hrs ? exp / hrs : 0;
   const cancelRate = done.length + canc.length ? Math.round(canc.length / (done.length + canc.length) * 100) : 0;
@@ -366,8 +436,8 @@ function renderStats() {
     .filter(x => x.h > 0).sort((a, b) => b.h - a.h);
   const sMax = Math.max(1, ...byS.map(x => x.h));
 
-  const wd = [0, 0, 0, 0, 0, 0, 0]; done.forEach(l => { const g = new Date(l.date + 'T00:00').getDay(); wd[(g + 6) % 7] += hours(l); });
-  const wMax = Math.max(1, ...wd), wNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  const wdh = [0, 0, 0, 0, 0, 0, 0]; done.forEach(l => { const g = new Date(l.date + 'T00:00').getDay(); wdh[(g + 6) % 7] += hours(l); });
+  const wMax = Math.max(1, ...wdh), wNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
   const subj = {}; done.forEach(l => { const k = (stu(l.studentId)?.subject || 'Без предмета').trim() || 'Без предмета'; subj[k] = (subj[k] || 0) + sum(l); });
   const sjArr = Object.entries(subj).sort((a, b) => b[1] - a[1]), sjTot = sjArr.reduce((a, [, v]) => a + v, 0) || 1;
@@ -378,13 +448,14 @@ function renderStats() {
 
   const per = [['30', '30 дней'], ['90', '90 дней'], ['all', 'Всё время']];
   view.innerHTML = `
-    <div class="chips" style="margin-top:12px">${per.map(([k, t]) => `<button class="chip ${period === k ? 'active' : ''}" data-p="${k}">${t}</button>`).join('')}</div>
+    <div class="chips" style="margin-top:40px">${per.map(([k, t]) => `<button class="chip ${period === k ? 'active' : ''}" data-p="${k}">${t}</button>`).join('')}</div>
     <div class="kpis">
       <div class="kpi k1"><b>${money(income)}</b><span>получено</span></div>
       <div class="kpi k2"><b>${money(hrs)} ч</b><span>проведено · ${done.length} зан.</span></div>
       <div class="kpi k3"><b>${money(avg)}</b><span>средний чек</span></div>
       <div class="kpi k4"><b>${money(perHour)}</b><span>средняя ставка в час</span></div>
     </div>
+    <div class="card row"><span>💸 Не оплачено сейчас</span><b style="color:${debt ? 'var(--warn)' : 'var(--ok)'}">${money(debt)} · ${unpaid.length} зан.</b></div>
     <h2>Доход по месяцам</h2>
     <div class="card">${mKeys.length ? `<div class="bars">${mKeys.map((k, i) => `<div class="bcol"><div class="v">${money(byM[k])}</div><div class="b" style="height:${Math.max(4, byM[k] / mMax * 100)}%;animation-delay:${i * 70}ms"></div><div class="l">${mShort(k)}</div></div>`).join('')}</div>` : '<div class="empty">Нет данных за период</div>'}</div>
     <h2>Занятия и оплаты</h2>
@@ -397,7 +468,7 @@ function renderStats() {
     <div class="card">${byS.length ? byS.map((x, i) => { const [a, b] = colorOf(x.s.id); return `<div class="hbar"><div class="top"><span>${esc(x.s.name)}</span><b>${money(x.h)} ч · ${money(x.inc)}</b></div>
       <div class="track"><div class="fill" style="width:${x.h / sMax * 100}%;background:linear-gradient(90deg,${a},${b});animation-delay:${i * 60}ms"></div></div></div>`; }).join('') : '<div class="empty">Нет данных</div>'}</div>
     <h2>Нагрузка по дням недели</h2>
-    <div class="card"><div class="bars" style="height:120px">${wd.map((h, i) => `<div class="bcol"><div class="v">${h ? money(h) : ''}</div><div class="b" style="height:${Math.max(3, h / wMax * 100)}%;animation-delay:${i * 50}ms;${h ? '' : 'opacity:.25'}"></div><div class="l">${wNames[i]}</div></div>`).join('')}</div></div>
+    <div class="card"><div class="bars" style="height:120px">${wdh.map((h, i) => `<div class="bcol"><div class="v">${h ? money(h) : ''}</div><div class="b" style="height:${Math.max(3, h / wMax * 100)}%;animation-delay:${i * 50}ms;${h ? '' : 'opacity:.25'}"></div><div class="l">${wNames[i]}</div></div>`).join('')}</div></div>
     <h2>Доли по предметам</h2>
     <div class="card">${sjArr.length ? sjArr.map(([k, v], i) => { const [a, b] = PALETTE[i % PALETTE.length]; return `<div class="hbar"><div class="top"><span>${esc(k)}</span><b>${Math.round(v / sjTot * 100)}% · ${money(v)}</b></div>
       <div class="track"><div class="fill" style="width:${v / sjTot * 100}%;background:linear-gradient(90deg,${a},${b});animation-delay:${i * 60}ms"></div></div></div>`; }).join('') : '<div class="empty">Нет данных</div>'}</div>`;
@@ -427,10 +498,10 @@ function openStudentSheet(s) {
 
 function openLessonSheet(l) {
   if (!db.students.length) return alertMsg('Сначала добавьте ученика');
-  const now = new Date(), nextH = String((now.getHours() + 1) % 24).padStart(2, '0') + ':00';
+  const now = new Date(), nextH = p2((now.getHours() + 1) % 24) + ':00';
   openSheet(`<h3>${l ? 'Редактировать занятие' : 'Новое занятие'}</h3>
     <label>Ученик</label><select id="l-stu">${db.students.map(s => `<option value="${s.id}" ${l?.studentId === s.id ? 'selected' : ''}>${esc(s.name)}${s.subject ? ' — ' + esc(s.subject) : ''}</option>`).join('')}</select>
-    <div class="two"><div><label>Дата</label><input id="l-date" type="date" value="${l?.date || todayStr()}"></div>
+    <div class="two"><div><label>Дата</label><input id="l-date" type="date" value="${l?.date || selDay || todayStr()}"></div>
     <div><label>Время</label><input id="l-time" type="time" value="${l?.time || nextH}"></div></div>
     <div class="two"><div><label>Длительность, мин</label><input id="l-dur" type="number" inputmode="numeric" value="${l?.duration || 60}"></div>
     <div><label>Статус</label><select id="l-status">${Object.entries(statusName).map(([k, t]) => `<option value="${k}" ${(l?.status || '') === k ? 'selected' : ''}>${t[0].toUpperCase() + t.slice(1)}</option>`).join('')}</select></div></div>
@@ -446,6 +517,33 @@ function openLessonSheet(l) {
   };
 }
 
+function openSettings() {
+  openSheet(`<h3>Цель и данные</h3>
+    <label>Цель по доходу на месяц</label>
+    <input id="g-goal" type="number" inputmode="decimal" placeholder="Например, 1500" value="${db.goal || ''}">
+    <div style="height:10px"></div><button class="btn" id="g-save">Сохранить цель</button>
+    <h3 style="margin-top:24px">Резервная копия</h3>
+    <div class="hint">Данные хранятся в вашем аккаунте Telegram и доступны на всех ваших устройствах. Копия нужна на всякий случай.</div>
+    <div style="height:10px"></div><button class="btn ghost" id="g-exp">Скопировать копию данных</button>
+    <label>Восстановить из копии: вставьте текст сюда</label>
+    <textarea id="g-imp" placeholder="Вставьте скопированный текст"></textarea>
+    <div style="height:10px"></div><button class="btn ghost" id="g-impbtn">Восстановить данные</button>
+    <div style="height:18px"></div><button class="btn danger" id="g-clear">Удалить все данные</button>`);
+  $('g-save').onclick = async () => { db.goal = Math.max(0, parseFloat(val('g-goal')) || 0); haptic('medium'); closeSheet(); await persist(); render(); };
+  $('g-exp').onclick = async () => {
+    const txt = JSON.stringify(db);
+    try { await navigator.clipboard.writeText(txt); alertMsg('Копия данных скопирована в буфер обмена. Вставьте её в «Избранное» в Telegram.'); }
+    catch (e) { $('g-imp').value = txt; $('g-imp').select(); alertMsg('Скопируйте текст из поля ниже вручную.'); }
+  };
+  $('g-impbtn').onclick = () => {
+    let obj; try { obj = JSON.parse(val('g-imp')); } catch (e) { return alertMsg('Не удалось прочитать данные. Вставьте текст копии целиком.'); }
+    if (!obj || !Array.isArray(obj.students) || !Array.isArray(obj.lessons)) return alertMsg('Это не похоже на копию трекера.');
+    confirmDlg('Заменить текущие данные данными из копии?', async () => { db = obj; closeSheet(); await persist(); render(); });
+  };
+  $('g-clear').onclick = () => confirmDlg('Удалить всех учеников и все занятия? Это нельзя отменить.', async () => { db = {students: [], lessons: [], goal: 0}; closeSheet(); await persist(); render(); });
+}
+
+$('gear').onclick = () => { haptic(); openSettings(); };
 $('fab').onclick = () => { haptic(); tab === 'students' ? openStudentSheet() : openLessonSheet(); };
 $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => { tab = b.dataset.tab; haptic(); window.scrollTo({top: 0, behavior: 'smooth'}); render(); });
 
@@ -453,6 +551,7 @@ $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => { tab = b.da
 (async () => {
   const cached = Storage.cacheGet();
   if (cached) db = cached;
+  setSync(Storage.hasCloud ? 'saved' : 'local');
   render();
   setTimeout(() => document.body.classList.add('noanim'), 700);
   try {
@@ -462,7 +561,7 @@ $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => { tab = b.da
     } else if (cached && (!cl || (cached.updated || 0) > (cl.updated || 0))) {
       dirty = true; flush();
     }
-  } catch (e) { console.error(e); }
+  } catch (e) { console.error(e); setSync('error'); }
 })();
 </script>
 </body>
