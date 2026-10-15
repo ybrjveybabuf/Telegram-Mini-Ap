@@ -35,6 +35,7 @@ body{font:15px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif;background:var(--
 main{padding:0 14px;margin-top:-30px;position:relative;z-index:2}
 .card{background:var(--card);border-radius:var(--radius);padding:14px;margin:12px 0;box-shadow:var(--shadow);animation:rise .35s ease both}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.noanim .card,.noanim .kpi{animation:none}
 h2{font-size:17px;margin:22px 4px 6px;display:flex;align-items:center;justify-content:space-between}
 h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .hint{color:var(--hint);font-size:13px}
@@ -43,8 +44,7 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .tabs{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;padding:6px;border-radius:26px;
-  background:color-mix(in srgb,var(--card) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  box-shadow:0 10px 30px rgba(20,40,90,.22);z-index:20}
+  background:var(--card);box-shadow:0 10px 30px rgba(20,40,90,.22);z-index:20}
 .tabs button{flex:1;border:0;background:none;color:var(--hint);padding:8px 0 6px;border-radius:20px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:.25s}
 .tabs button span{font-size:19px;line-height:1}
 .tabs button.active{color:#fff;background:linear-gradient(135deg,var(--brand1),var(--brand3));box-shadow:0 4px 12px rgba(43,108,255,.45)}
@@ -156,39 +156,47 @@ const haptic = (t = 'light') => { try { tg && tg.HapticFeedback && tg.HapticFeed
 
 /* ===== Слой хранения (для варианта Б заменить этот блок) ===== */
 const Storage = (() => {
-  const CHUNK = 1000, PREFIX = 'db';
+  const CHUNK = 1800, P = 'db';
   const hasCloud = !!(tg && tg.CloudStorage && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9'));
   const cloud = {
     get: keys => new Promise((res, rej) => tg.CloudStorage.getItems(keys, (e, v) => e ? rej(e) : res(v))),
     set: (k, v) => new Promise((res, rej) => tg.CloudStorage.setItem(k, v, (e, ok) => e ? rej(e) : res(ok))),
     del: keys => new Promise((res, rej) => tg.CloudStorage.removeItems(keys, (e, ok) => e ? rej(e) : res(ok)))
   };
-  async function load() {
-    if (!hasCloud) { try { return JSON.parse(localStorage.getItem(PREFIX)) || null; } catch { return null; } }
-    const meta = await cloud.get([PREFIX + ':n']);
-    const n = parseInt(meta[PREFIX + ':n'] || '0', 10);
+  let last = [];
+  const cacheGet = () => { try { return JSON.parse(localStorage.getItem('db_cache')); } catch { return null; } };
+  const cacheSet = d => { try { localStorage.setItem('db_cache', JSON.stringify(d)); } catch {} };
+
+  async function loadCloud() {
+    if (!hasCloud) return null;
+    const meta = await cloud.get([P + ':n']);
+    const n = parseInt(meta[P + ':n'] || '0', 10);
     if (!n) return null;
-    const keys = Array.from({length: n}, (_, i) => `${PREFIX}:${i}`);
+    const keys = Array.from({length: n}, (_, i) => `${P}:${i}`);
     const parts = await cloud.get(keys);
-    return JSON.parse(keys.map(k => parts[k] || '').join(''));
+    last = keys.map(k => parts[k] || '');
+    return JSON.parse(last.join(''));
   }
-  async function save(data) {
-    const json = JSON.stringify(data);
-    if (!hasCloud) { localStorage.setItem(PREFIX, json); return; }
-    const oldMeta = await cloud.get([PREFIX + ':n']);
-    const oldN = parseInt(oldMeta[PREFIX + ':n'] || '0', 10);
-    const chunks = [];
+
+  async function saveCloud(data) {
+    if (!hasCloud) return;
+    const json = JSON.stringify(data), chunks = [];
     for (let i = 0; i < json.length; i += CHUNK) chunks.push(json.slice(i, i + CHUNK));
-    for (let i = 0; i < chunks.length; i++) await cloud.set(`${PREFIX}:${i}`, chunks[i]);
-    await cloud.set(PREFIX + ':n', String(chunks.length));
-    if (oldN > chunks.length) await cloud.del(Array.from({length: oldN - chunks.length}, (_, i) => `${PREFIX}:${chunks.length + i}`));
+    const jobs = [];
+    chunks.forEach((c, i) => { if (last[i] !== c) jobs.push(cloud.set(`${P}:${i}`, c)); });
+    await Promise.all(jobs);
+    if (chunks.length !== last.length) await cloud.set(P + ':n', String(chunks.length));
+    if (last.length > chunks.length) {
+      await cloud.del(Array.from({length: last.length - chunks.length}, (_, i) => `${P}:${chunks.length + i}`));
+    }
+    last = chunks;
   }
-  return {load, save};
+  return {cacheGet, cacheSet, loadCloud, saveCloud};
 })();
 
 /* ===== Состояние и утилиты ===== */
 let db = {students: [], lessons: []};
-let tab = 'lessons', lessonFilter = 'all', period = 'all';
+let tab = 'lessons', lessonFilter = 'all', period = 'all', lessonLimit = 50;
 const $ = id => document.getElementById(id);
 const view = $('view');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -204,8 +212,30 @@ const colorOf = id => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeA
 const avatar = s => { const [a, b] = colorOf(s.id); return `<div class="avatar" style="background:linear-gradient(135deg,${a},${b})">${esc((s.name || '?').trim()[0]?.toUpperCase())}</div>`; };
 const alertMsg = m => tg && tg.showAlert ? tg.showAlert(m) : alert(m);
 const confirmDlg = (m, cb) => tg && tg.showConfirm ? tg.showConfirm(m, ok => ok && cb()) : (confirm(m) && cb());
-const persist = async () => { try { await Storage.save(db); } catch (e) { alertMsg('Ошибка сохранения: ' + (e.message || e)); } };
 const statusName = {done: 'проведено', cancel: 'отменено', planned: 'запланировано'};
+
+/* ===== Быстрое сохранение: экран обновляется сразу, запись в облако в фоне ===== */
+let saveTimer = null, saving = false, dirty = false;
+async function flush() {
+  clearTimeout(saveTimer);
+  if (saving) { saveTimer = setTimeout(flush, 300); return; }
+  if (!dirty) return;
+  saving = true; dirty = false;
+  try { await Storage.saveCloud(db); }
+  catch (e) { dirty = true; console.error(e); }
+  saving = false;
+  if (dirty) saveTimer = setTimeout(flush, 2000);
+}
+function persist() {
+  db.updated = Date.now();
+  Storage.cacheSet(db);
+  dirty = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 400);
+  return Promise.resolve();
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+window.addEventListener('pagehide', flush);
 
 /* ===== Шапка ===== */
 function renderHero() {
@@ -234,6 +264,8 @@ function renderLessons() {
   if (lessonFilter === 'unpaid') list = list.filter(l => l.status === 'done' && !l.paid);
   list.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
   if (lessonFilter === 'upcoming') list.reverse();
+  const totalCount = list.length;
+  list = list.slice(0, lessonLimit);
   const groups = {};
   list.forEach(l => (groups[l.date] = groups[l.date] || []).push(l));
   const dayLabel = d => {
@@ -262,12 +294,14 @@ function renderLessons() {
               <button class="btn small danger" data-del="${l.id}">✕</button>
             </div>
           </div></div>`;
-      }).join('')).join('')}`;
-  view.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { lessonFilter = b.dataset.f; haptic(); render(); });
+      }).join('')).join('')}
+    ${totalCount > lessonLimit ? `<button class="btn ghost" id="more" style="margin-top:12px">Показать ещё (${totalCount - lessonLimit})</button>` : ''}`;
+  view.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { lessonFilter = b.dataset.f; lessonLimit = 50; haptic(); render(); });
   view.querySelectorAll('[data-pay]').forEach(b => b.onclick = async () => { const l = db.lessons.find(x => x.id === b.dataset.pay); l.paid = !l.paid; haptic('medium'); await persist(); render(); });
   view.querySelectorAll('[data-done]').forEach(b => b.onclick = async () => { db.lessons.find(x => x.id === b.dataset.done).status = 'done'; haptic('medium'); await persist(); render(); });
   view.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openLessonSheet(db.lessons.find(x => x.id === b.dataset.edit)));
   view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => confirmDlg('Удалить занятие?', async () => { db.lessons = db.lessons.filter(l => l.id !== b.dataset.del); await persist(); render(); }));
+  const more = $('more'); if (more) more.onclick = () => { lessonLimit += 50; render(); };
 }
 
 function renderStudents() {
@@ -417,8 +451,18 @@ $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => { tab = b.da
 
 /* ===== Старт ===== */
 (async () => {
-  try { const d = await Storage.load(); if (d) db = d; } catch (e) { console.error(e); }
+  const cached = Storage.cacheGet();
+  if (cached) db = cached;
   render();
+  setTimeout(() => document.body.classList.add('noanim'), 700);
+  try {
+    const cl = await Storage.loadCloud();
+    if (cl && (!cached || (cl.updated || 0) > (cached.updated || 0)) && !dirty) {
+      db = cl; Storage.cacheSet(db); render();
+    } else if (cached && (!cl || (cached.updated || 0) > (cl.updated || 0))) {
+      dirty = true; flush();
+    }
+  } catch (e) { console.error(e); }
 })();
 </script>
 </body>
