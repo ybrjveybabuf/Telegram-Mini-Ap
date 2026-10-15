@@ -73,12 +73,15 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .mnav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0}
 .mnav b{font-size:18px;text-transform:capitalize}
 .dl{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700;background:rgba(255,255,255,.28)}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.cal .wh{font-size:10.5px;color:var(--hint);text-align:center}
-.cd{aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;background:rgba(127,127,127,.1);line-height:1.15}
-.cd b{font-size:12px}
-.cd.empty{background:none}
-.cd.today{outline:2px solid var(--brand1)}
+
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .wh{font-size:11px;font-weight:600;color:var(--hint);text-align:center;padding-bottom:2px}
+.cd{height:44px;min-width:0;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1;background:rgba(127,127,127,.1)}
+.cd b{font-size:13px;font-weight:700}
+.cd span{font-size:10px;font-weight:600;opacity:.9}
+.cd.off{background:none}
+.cd.today{outline:2px solid var(--brand1);outline-offset:-2px}
+
 .mrow{display:block;width:100%;text-align:left;border:0;color:var(--text);background:var(--card);border-radius:14px;padding:11px 12px;margin:8px 0;box-shadow:var(--shadow)}
 .mrow.sel{outline:2px solid var(--brand1)}
 .mrow .nm{text-transform:capitalize;font-weight:700}
@@ -802,10 +805,11 @@ function renderMonths() {
   const offset = (new Date(y, mo - 1, 1).getDay() + 6) % 7, dim = new Date(y, mo, 0).getDate();
   const perDay = {}; S.ls.filter(l => l.status !== 'cancel').forEach(l => { perDay[l.date] = (perDay[l.date] || 0) + 1; });
   const maxDay = Math.max(1, ...Object.values(perDay));
-  let cal = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => `<div class="wh">${d}</div>`).join('') + '<div class="cd empty"></div>'.repeat(offset);
+  let cal = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d => `<div class="wh">${d}</div>`).join('') + '<div class="cd off"></div>'.repeat(offset);
   for (let d = 1; d <= dim; d++) {
     const ds = `${m}-${p2(d)}`, n = perDay[ds] || 0;
-    cal += `<div class="cd ${ds === todayStr() ? 'today' : ''}" style="${n ? `background:rgba(43,108,255,${(.18 + .62 * n / maxDay).toFixed(2)});color:${n / maxDay > .5 ? '#fff' : 'inherit'}` : ''}"><b>${d}</b>${n ? `<span>${n}</span>` : ''}</div>`;
+    const strong = n / maxDay > .5;
+    cal += `<div class="cd ${ds === todayStr() ? 'today' : ''}" style="${n ? `background:rgba(43,108,255,${(.18 + .62 * n / maxDay).toFixed(2)});${strong ? 'color:#fff;' : ''}` : ''}"><b>${d}</b>${n ? `<span>${n}</span>` : ''}</div>`;
   }
 
   const allMonths = [...new Set([cur, ...db.lessons.map(l => l.date.slice(0, 7))])].sort().reverse();
@@ -830,12 +834,12 @@ function renderMonths() {
       <div class="row hint" style="margin-top:10px"><span>🎁 пробных: ${S.trials.length}</span><span>↻ перенесено: ${S.moved.length}</span><span>⏳ впереди: ${S.planned.length}</span></div>
     </div>
     <h2>Календарь месяца</h2>
-    <div class="card"><div class="cal">${cal}</div><div class="hint" style="margin-top:8px">Число в клетке — занятий в этот день, чем ярче, тем плотнее</div></div>
+    <div class="card"><div class="cal">${cal}</div><div class="hint" style="margin-top:10px">Число в клетке — занятий в этот день, чем ярче, тем плотнее</div></div>
     <h2>Ученики за месяц</h2>
     <div class="card">${byS.length ? byS.map((x, i) => { const [a, b] = colorOf(x.s.id); return `<div class="hbar"><div class="top"><span>${esc(x.s.name)}</span><b>${money(x.inc)} · ${money(x.h)} ч · ${x.n} зан.${x.debt ? ` · <span style="color:var(--warn)">долг ${money(x.debt)}</span>` : ''}</b></div>
       <div class="track"><div class="fill" style="width:${Math.max(4, (x.inc || x.h) / sMax * 100)}%;background:linear-gradient(90deg,${a},${b});animation-delay:${i * 60}ms"></div></div></div>`; }).join('') : '<div class="empty">В этом месяце нет проведённых занятий</div>'}</div>
     <h2>Все месяцы <span class="cnt">${allMonths.length}</span></h2>
-    ${allMonths.map((k, i) => { const x = stat[k], pv = stat[shiftMonth(k, -1)] || monthStats(shiftMonth(k, -1));
+    ${allMonths.map(k => { const x = stat[k], pv = stat[shiftMonth(k, -1)] || monthStats(shiftMonth(k, -1));
       return `<button class="mrow ${k === m ? 'sel' : ''}" data-mpick="${k}">
         <div class="row"><span class="nm">${monthName(k)}</span><b>${money(x.income)} ${deltaPlain(x.income, pv.income)}</b></div>
         <div class="hint">${x.n} зан. · ${money(x.hrs)} ч${x.debt ? ` · долг ${money(x.debt)}` : ''}</div>
