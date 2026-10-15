@@ -22,15 +22,17 @@ body{font:15px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif;background:var(--
 button{font-family:inherit}
 .hero{position:relative;padding:calc(16px + env(safe-area-inset-top)) 18px 58px;color:#fff;
   background:linear-gradient(135deg,var(--brand1),var(--brand3) 55%,var(--brand2));
-  border-radius:0 0 34px 34px;overflow:hidden}
+  border-radius:0 0 34px 34px;overflow:hidden;transition:opacity .45s ease,filter .45s ease}
+body:not(.on-stats) .hero{opacity:.2;filter:saturate(.7)}
 .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.12)}
 .hero::before{width:220px;height:220px;right:-70px;top:-80px}
 .hero::after{width:140px;height:140px;left:-40px;bottom:-60px}
-.hero-top{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+.hero-top{display:flex;align-items:center;gap:12px;position:relative;z-index:1;padding-right:48px}
 .hero-top img{width:46px;height:46px;border-radius:13px;box-shadow:0 4px 14px rgba(0,0,0,.25);background:#fff3}
 .hero-top h1{font-size:19px;margin:0;line-height:1.15}
 .hero-top small{opacity:.85}
-.gear{margin-left:auto;width:38px;height:38px;border-radius:12px;border:0;background:rgba(255,255,255,.2);color:#fff;font-size:18px}
+.gear{position:fixed;top:calc(14px + env(safe-area-inset-top));right:14px;z-index:30;width:38px;height:38px;border-radius:12px;border:0;
+  background:rgba(43,108,255,.88);color:#fff;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .sync{position:relative;z-index:1;display:inline-block;margin-top:10px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.2);font-size:11.5px}
 .hero-sum{position:relative;z-index:1;margin-top:12px}
 .hero-sum .big{font-size:34px;font-weight:800;letter-spacing:-.5px}
@@ -143,11 +145,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--brand1)}
 </head>
 <body>
 
+<button class="gear" id="gear">⚙</button>
+
 <div class="hero">
   <div class="hero-top">
     <img src="logo.png" alt="" onerror="this.style.display='none'">
     <div><h1>Трекер репетитора</h1><small id="hello">Добро пожаловать</small></div>
-    <button class="gear" id="gear">⚙</button>
   </div>
   <div class="sync" id="sync">☁ загрузка…</div>
   <div class="hero-sum">
@@ -192,9 +195,7 @@ const Storage = (() => {
     del: keys => new Promise((res, rej) => tg.CloudStorage.removeItems(keys, (e, ok) => e ? rej(e) : res(ok)))
   };
   let last = [];
-  const cacheGet = () => {
-    try { return JSON.parse(localStorage.getItem(CK)) || (!tgUser ? null : null); } catch { return null; }
-  };
+  const cacheGet = () => { try { return JSON.parse(localStorage.getItem(CK)); } catch { return null; } };
   const cacheSet = d => { try { localStorage.setItem(CK, JSON.stringify(d)); } catch {} };
   async function loadCloud() {
     if (!hasCloud) return null;
@@ -289,6 +290,7 @@ function renderHero() {
 
 /* ===== Рендер ===== */
 function render() {
+  document.body.classList.toggle('on-stats', tab === 'stats');
   document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   $('fab').classList.toggle('hidden', !(tab === 'lessons' || tab === 'students'));
   renderHero();
@@ -339,6 +341,7 @@ function renderLessons() {
   list.forEach(l => (groups[l.date] = groups[l.date] || []).push(l));
   const dayLabel = d => d === now ? 'Сегодня' : new Date(d + 'T00:00').toLocaleDateString('ru-RU', {weekday: 'long', day: 'numeric', month: 'long'});
   view.innerHTML = `
+    <div style="height:40px"></div>
     ${db.students.length ? todayCard(now) + weekStrip() : ''}
     <div class="chips">${chips.map(([k, t]) => `<button class="chip ${!selDay && lessonFilter === k ? 'active' : ''}" data-f="${k}">${t}<em>${db.lessons.filter(flt[k]).length}</em></button>`).join('')}</div>
     ${selDay ? `<div class="hint" style="margin:0 6px">Показан день ${fmtDate(selDay)} · нажмите на него ещё раз, чтобы сбросить</div>` : ''}
@@ -373,7 +376,7 @@ function renderLessons() {
 }
 
 function renderStudents() {
-  view.innerHTML = `<h2 style="margin-top:34px">Ученики <span class="cnt">${db.students.length}</span></h2>` +
+  view.innerHTML = `<h2 style="margin-top:44px">Ученики <span class="cnt">${db.students.length}</span></h2>` +
     (db.students.length ? db.students.map(s => {
       const ls = db.lessons.filter(l => l.studentId === s.id && l.status === 'done');
       const h = ls.reduce((a, l) => a + hours(l), 0);
@@ -401,7 +404,7 @@ function renderTotals() {
   const tInc = months.reduce((s, m) => s + byM[m].inc, 0), tH = months.reduce((s, m) => s + byM[m].h, 0), debt = unpaid.reduce((s, l) => s + sum(l), 0);
   const mName = m => new Date(m + '-01T00:00').toLocaleDateString('ru-RU', {month: 'long', year: 'numeric'});
   view.innerHTML = `
-    <div class="kpis" style="margin-top:40px">
+    <div class="kpis" style="margin-top:44px">
       <div class="kpi k2"><b>${money(tInc)}</b><span>доход (оплачено)</span></div>
       <div class="kpi k1"><b>${money(tH)} ч</b><span>отработано</span></div>
       <div class="kpi k4" style="grid-column:span 2"><b>${money(debt)}</b><span>ожидает оплаты · ${unpaid.length} зан.</span></div>
@@ -439,16 +442,13 @@ function renderStats() {
   const wdh = [0, 0, 0, 0, 0, 0, 0]; done.forEach(l => { const g = new Date(l.date + 'T00:00').getDay(); wdh[(g + 6) % 7] += hours(l); });
   const wMax = Math.max(1, ...wdh), wNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
-  const subj = {}; done.forEach(l => { const k = (stu(l.studentId)?.subject || 'Без предмета').trim() || 'Без предмета'; subj[k] = (subj[k] || 0) + sum(l); });
-  const sjArr = Object.entries(subj).sort((a, b) => b[1] - a[1]), sjTot = sjArr.reduce((a, [, v]) => a + v, 0) || 1;
-
   const seg = [[paid.length, 'var(--ok)', 'Оплачено'], [unpaid.length, 'var(--warn)', 'Не оплачено'], [canc.length, '#98a2b3', 'Отменено'], [plan.length, 'var(--plan)', 'Запланировано']];
   const tot = seg.reduce((a, x) => a + x[0], 0), R = 46, C = 2 * Math.PI * R; let off = 0;
   const arcs = seg.map(([n, col]) => { if (!n) return ''; const len = n / tot * C; const s = `<circle cx="64" cy="64" r="${R}" fill="none" stroke="${col}" stroke-width="16" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}"/>`; off += len; return s; }).join('');
 
   const per = [['30', '30 дней'], ['90', '90 дней'], ['all', 'Всё время']];
   view.innerHTML = `
-    <div class="chips" style="margin-top:40px">${per.map(([k, t]) => `<button class="chip ${period === k ? 'active' : ''}" data-p="${k}">${t}</button>`).join('')}</div>
+    <div class="chips" style="margin-top:44px">${per.map(([k, t]) => `<button class="chip ${period === k ? 'active' : ''}" data-p="${k}">${t}</button>`).join('')}</div>
     <div class="kpis">
       <div class="kpi k1"><b>${money(income)}</b><span>получено</span></div>
       <div class="kpi k2"><b>${money(hrs)} ч</b><span>проведено · ${done.length} зан.</span></div>
@@ -468,10 +468,7 @@ function renderStats() {
     <div class="card">${byS.length ? byS.map((x, i) => { const [a, b] = colorOf(x.s.id); return `<div class="hbar"><div class="top"><span>${esc(x.s.name)}</span><b>${money(x.h)} ч · ${money(x.inc)}</b></div>
       <div class="track"><div class="fill" style="width:${x.h / sMax * 100}%;background:linear-gradient(90deg,${a},${b});animation-delay:${i * 60}ms"></div></div></div>`; }).join('') : '<div class="empty">Нет данных</div>'}</div>
     <h2>Нагрузка по дням недели</h2>
-    <div class="card"><div class="bars" style="height:120px">${wdh.map((h, i) => `<div class="bcol"><div class="v">${h ? money(h) : ''}</div><div class="b" style="height:${Math.max(3, h / wMax * 100)}%;animation-delay:${i * 50}ms;${h ? '' : 'opacity:.25'}"></div><div class="l">${wNames[i]}</div></div>`).join('')}</div></div>
-    <h2>Доли по предметам</h2>
-    <div class="card">${sjArr.length ? sjArr.map(([k, v], i) => { const [a, b] = PALETTE[i % PALETTE.length]; return `<div class="hbar"><div class="top"><span>${esc(k)}</span><b>${Math.round(v / sjTot * 100)}% · ${money(v)}</b></div>
-      <div class="track"><div class="fill" style="width:${v / sjTot * 100}%;background:linear-gradient(90deg,${a},${b});animation-delay:${i * 60}ms"></div></div></div>`; }).join('') : '<div class="empty">Нет данных</div>'}</div>`;
+    <div class="card"><div class="bars" style="height:120px">${wdh.map((h, i) => `<div class="bcol"><div class="v">${h ? money(h) : ''}</div><div class="b" style="height:${Math.max(3, h / wMax * 100)}%;animation-delay:${i * 50}ms;${h ? '' : 'opacity:.25'}"></div><div class="l">${wNames[i]}</div></div>`).join('')}</div></div>`;
   view.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { period = b.dataset.p; haptic(); render(); });
 }
 
