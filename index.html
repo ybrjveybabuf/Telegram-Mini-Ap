@@ -274,6 +274,7 @@ const tg = window.Telegram && Telegram.WebApp;
 if (tg) {
   tg.ready(); tg.expand();
   try { tg.setHeaderColor && tg.setHeaderColor('secondary_bg_color'); } catch (e) {}
+  try { tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}
 }
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 const haptic = (t = 'light') => { try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t); } catch (e) {} };
@@ -596,6 +597,7 @@ function layoutDay(items) {
 function openPlanner() {
   plannerOpen = true; planOff = 0;
   $('planner').classList.add('show');
+  try { tg && tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}
   document.body.style.overflow = 'hidden';
   renderPlanner();
   const h = new Date().getHours();
