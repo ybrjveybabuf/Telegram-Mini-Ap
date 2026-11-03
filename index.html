@@ -211,6 +211,9 @@ h2 .cnt{font-size:12px;color:var(--hint);font-weight:500}
 .pghost{position:fixed;z-index:80;pointer-events:none;transform:translate(-50%,-135%);padding:7px 14px;border-radius:18px;color:#fff;font-weight:700;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .pnow{position:absolute;left:0;right:0;height:2px;background:var(--bad);z-index:2;pointer-events:none}
 .pnow::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--bad)}
+.ptrash{position:absolute;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:50%;background:var(--card);box-shadow:0 8px 22px rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center;font-size:26px;z-index:5;opacity:.5;transition:transform .18s,background .18s,opacity .18s;user-select:none;-webkit-user-select:none}
+.planner.dragging-lesson .ptrash{opacity:1}
+.ptrash.hot{background:var(--bad);transform:scale(1.25);opacity:1}
 
 .toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translate(-50%,-140%);z-index:90;max-width:90%;
   padding:12px 18px;border-radius:16px;color:#fff;font-weight:600;font-size:14px;text-align:center;
@@ -652,7 +655,8 @@ function renderPlanner() {
     <div class="pdays"><div></div>${dayHead}</div>
     <div class="pscroll" id="pscroll"><div class="pgrid"><div class="ptime" style="height:${totalH}px">${timeLabels}</div>${cols}</div>
       ${outside ? `<div class="hint" style="text-align:center;margin-top:10px">Вне сетки ${P_START}:00–${P_END}:00: ${outside} зан.</div>` : ''}
-      <div class="hint" style="text-align:center;margin:10px 14px 0">Перетащите ученика на день и время. Запланированные занятия тоже можно двигать.</div></div>`;
+      <div class="hint" style="text-align:center;margin:10px 14px 0">Перетащите ученика на день и время. Запланированные занятия тоже можно двигать, а на 🗑 внизу справа удалить.</div></div>
+    <div class="ptrash" id="p-trash">🗑</div>`;
   $('pscroll').scrollTop = keep;
 
   $('p-close').onclick = () => { haptic(); closePlanner(); };
@@ -695,6 +699,7 @@ function armDrag(e, data) {
 const blockTouch = e => { if (drag) e.preventDefault(); };
 
 function beginDrag(data, ev) {
+  try { tg && tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {}
   const l = data.kind === 'move' ? lessonById(data.lessonId) : null;
   const st = stu(l ? l.studentId : data.studentId); if (!st) return;
   const [a, b] = colorOf(st.id);
@@ -702,10 +707,11 @@ function beginDrag(data, ev) {
   ghost.className = 'pghost'; ghost.textContent = st.name; ghost.style.background = `linear-gradient(135deg,${a},${b})`;
   ghost.style.left = ev.clientX + 'px'; ghost.style.top = ev.clientY + 'px';
   document.body.appendChild(ghost);
-  drag = {...data, dur: l ? (l.duration || 60) : 60, ghost, target: null, ph: null, last: {x: ev.clientX, y: ev.clientY}, raf: 0, name: st.name};
+  drag = {...data, dur: l ? (l.duration || 60) : 60, ghost, target: null, ph: null, last: {x: ev.clientX, y: ev.clientY}, raf: 0, name: st.name, overTrash: false};
   document.addEventListener('touchmove', blockTouch, {passive: false});
   if (l) { const src = document.querySelector(`.pblk[data-lid="${l.id}"]`); if (src) src.classList.add('src'); }
   drag.raf = requestAnimationFrame(autoScroll);
+  if (data.kind === 'move') $('planner').classList.add('dragging-lesson');
   haptic('medium');
 }
 function dragMove(ev) {
@@ -717,6 +723,11 @@ function updateTarget() {
   if (!drag) return;
   const {x, y} = drag.last;
   const under = document.elementFromPoint(x, y);
+  const trashEl = $('p-trash');
+  const overTrash = drag.kind === 'move' && under && under.closest && under.closest('#p-trash');
+  if (trashEl) trashEl.classList.toggle('hot', !!overTrash);
+  drag.overTrash = !!overTrash;
+  if (overTrash) { if (drag.ph) { drag.ph.remove(); drag.ph = null; } drag.target = null; return; }
   const col = under && under.closest ? under.closest('.pcol') : null;
   let tgt = null;
   if (col) {
@@ -743,7 +754,7 @@ function autoScroll() {
   let v = 0;
   if (y > r.bottom - 70) v = Math.min(16, (y - (r.bottom - 70)) / 4);
   else if (y < r.top + 50 && y > r.top - 80) v = -Math.min(16, ((r.top + 50) - y) / 4);
-  if (v) { sc.scrollTop += v; updateTarget(); }
+  if (v && !drag.overTrash) { sc.scrollTop += v; updateTarget(); }
   drag.raf = requestAnimationFrame(autoScroll);
 }
 function teardownDrag() {
@@ -751,6 +762,8 @@ function teardownDrag() {
   const d = drag; drag = null;
   cancelAnimationFrame(d.raf);
   d.ghost.remove(); if (d.ph) d.ph.remove();
+  $('planner').classList.remove('dragging-lesson');
+  const tEl = $('p-trash'); if (tEl) tEl.classList.remove('hot');
   document.removeEventListener('touchmove', blockTouch);
   const src = d.kind === 'move' ? document.querySelector(`.pblk[data-lid="${d.lessonId}"]`) : null;
   if (src) src.classList.remove('src');
@@ -758,7 +771,19 @@ function teardownDrag() {
 }
 function dragEnd() {
   const d = teardownDrag();
+  if (d && d.kind === 'move' && d.overTrash) { deleteFromPlanner(d.lessonId); return; }
   if (d && d.target) applyDrop(d);
+}
+
+function deleteFromPlanner(id) {
+  const l = lessonById(id); if (!l) return;
+  const name = stu(l.studentId)?.name || '—';
+  hapticWarn();
+  confirmDlg(`Удалить занятие?\n${name} · ${fmtDate(l.date)} в ${l.time}`, async () => {
+    db.lessons = db.lessons.filter(x => x.id !== id);
+    haptic('medium'); toast('🗑 Занятие удалено');
+    await persist(); render();
+  });
 }
 
 async function applyDrop(d) {
